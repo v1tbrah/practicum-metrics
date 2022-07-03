@@ -20,23 +20,18 @@ func main() {
 
 	updateTime := time.NewTicker(pollInterval)
 	reportTime := time.NewTicker(reportInterval)
+
 	shutdown := make(chan os.Signal, 1)
 	signal.Notify(shutdown, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
 
-	go func() {
-		for {
-			select {
-			case <-updateTime.C:
-				m.Update()
-			case <-reportTime.C:
-				send.AllMetrics(m)
-			case <-shutdown:
-				os.Exit(0)
-			}
-		}
-	}()
-
-	for {
+	select {
+	case <-updateTime.C:
+		m.Update()
+	case <-reportTime.C:
+		send.AllMetrics(m)
 	}
+
+	<-shutdown
+	os.Exit(0)
 
 }

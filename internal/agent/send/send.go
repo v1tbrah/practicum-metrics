@@ -3,7 +3,6 @@ package send
 import (
 	"fmt"
 	"github.com/v1tbrah/metricsAndAlerting/internal/metric"
-	"io"
 	"log"
 	"net/http"
 	"strconv"
@@ -62,15 +61,7 @@ func MetricAlloc(m metric.Metrics) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	if response.StatusCode != http.StatusOK {
-		//TODO
-	}
-	payload, err := io.ReadAll(response.Body)
-	if err != nil {
-		log.Fatal(err)
-	}
 	defer response.Body.Close()
-	fmt.Println(string(payload))
 
 }
 
@@ -86,9 +77,7 @@ func MetricBuckHashSys(m metric.Metrics) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	if response.StatusCode != http.StatusOK {
-		log.Fatal(err)
-	}
+	defer response.Body.Close()
 }
 
 func MetricFrees(m metric.Metrics) {
@@ -103,9 +92,7 @@ func MetricFrees(m metric.Metrics) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	if response.StatusCode != http.StatusOK {
-		log.Fatal(err)
-	}
+	defer response.Body.Close()
 }
 
 func MetricGCCPUFraction(m metric.Metrics) {
@@ -120,9 +107,7 @@ func MetricGCCPUFraction(m metric.Metrics) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	if response.StatusCode != http.StatusOK {
-		log.Fatal(err)
-	}
+	defer response.Body.Close()
 }
 
 func MetricGCSys(m metric.Metrics) {
@@ -137,9 +122,7 @@ func MetricGCSys(m metric.Metrics) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	if response.StatusCode != http.StatusOK {
-		//TODO
-	}
+	defer response.Body.Close()
 }
 
 func MetricHeapAlloc(m metric.Metrics) {
@@ -154,9 +137,7 @@ func MetricHeapAlloc(m metric.Metrics) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	if response.StatusCode != http.StatusOK {
-		//TODO
-	}
+	defer response.Body.Close()
 }
 
 func MetricHeapIdle(m metric.Metrics) {
@@ -171,9 +152,7 @@ func MetricHeapIdle(m metric.Metrics) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	if response.StatusCode != http.StatusOK {
-		//TODO
-	}
+	defer response.Body.Close()
 }
 
 func MetricHeapInuse(m metric.Metrics) {
@@ -188,9 +167,7 @@ func MetricHeapInuse(m metric.Metrics) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	if response.StatusCode != http.StatusOK {
-		//TODO
-	}
+	defer response.Body.Close()
 }
 
 func MetricHeapObjects(m metric.Metrics) {
@@ -205,9 +182,7 @@ func MetricHeapObjects(m metric.Metrics) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	if response.StatusCode != http.StatusOK {
-		//TODO
-	}
+	defer response.Body.Close()
 }
 
 func MetricHeapReleased(m metric.Metrics) {
@@ -222,9 +197,7 @@ func MetricHeapReleased(m metric.Metrics) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	if response.StatusCode != http.StatusOK {
-		//TODO
-	}
+	defer response.Body.Close()
 }
 
 func MetricHeapSys(m metric.Metrics) {
@@ -239,9 +212,7 @@ func MetricHeapSys(m metric.Metrics) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	if response.StatusCode != http.StatusOK {
-		//TODO
-	}
+	defer response.Body.Close()
 }
 
 func MetricLastGC(m metric.Metrics) {
@@ -256,9 +227,7 @@ func MetricLastGC(m metric.Metrics) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	if response.StatusCode != http.StatusOK {
-		//TODO
-	}
+	defer response.Body.Close()
 }
 
 func MetricLookups(m metric.Metrics) {
@@ -273,9 +242,7 @@ func MetricLookups(m metric.Metrics) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	if response.StatusCode != http.StatusOK {
-		//TODO
-	}
+	defer response.Body.Close()
 }
 
 func MetricMCacheInuse(m metric.Metrics) {
@@ -290,9 +257,7 @@ func MetricMCacheInuse(m metric.Metrics) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	if response.StatusCode != http.StatusOK {
-		//TODO
-	}
+	defer response.Body.Close()
 }
 
 func MetricMCacheSys(m metric.Metrics) {
@@ -307,9 +272,7 @@ func MetricMCacheSys(m metric.Metrics) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	if response.StatusCode != http.StatusOK {
-		//TODO
-	}
+	defer response.Body.Close()
 }
 
 func MetricMSpanInuse(m metric.Metrics) {
@@ -324,9 +287,7 @@ func MetricMSpanInuse(m metric.Metrics) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	if response.StatusCode != http.StatusOK {
-		//TODO
-	}
+	defer response.Body.Close()
 }
 
 func MetricMSpanSys(m metric.Metrics) {
@@ -341,9 +302,7 @@ func MetricMSpanSys(m metric.Metrics) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	if response.StatusCode != http.StatusOK {
-		//TODO
-	}
+	defer response.Body.Close()
 }
 
 func MetricNextGC(m metric.Metrics) {
@@ -358,9 +317,7 @@ func MetricNextGC(m metric.Metrics) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	if response.StatusCode != http.StatusOK {
-		//TODO
-	}
+	defer response.Body.Close()
 }
 
 func MetricNumForcedGC(m metric.Metrics) {
@@ -375,9 +332,7 @@ func MetricNumForcedGC(m metric.Metrics) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	if response.StatusCode != http.StatusOK {
-		//TODO
-	}
+	defer response.Body.Close()
 }
 
 func MetricNumGC(m metric.Metrics) {
@@ -392,9 +347,7 @@ func MetricNumGC(m metric.Metrics) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	if response.StatusCode != http.StatusOK {
-		//TODO
-	}
+	defer response.Body.Close()
 }
 
 func MetricOtherSys(m metric.Metrics) {
@@ -409,9 +362,7 @@ func MetricOtherSys(m metric.Metrics) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	if response.StatusCode != http.StatusOK {
-		//TODO
-	}
+	defer response.Body.Close()
 }
 
 func MetricPauseTotalNs(m metric.Metrics) {
@@ -426,9 +377,7 @@ func MetricPauseTotalNs(m metric.Metrics) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	if response.StatusCode != http.StatusOK {
-		//TODO
-	}
+	defer response.Body.Close()
 }
 
 func MetricStackInuse(m metric.Metrics) {
@@ -443,9 +392,7 @@ func MetricStackInuse(m metric.Metrics) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	if response.StatusCode != http.StatusOK {
-		//TODO
-	}
+	defer response.Body.Close()
 }
 
 func MetricStackSys(m metric.Metrics) {
@@ -460,9 +407,7 @@ func MetricStackSys(m metric.Metrics) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	if response.StatusCode != http.StatusOK {
-		//TODO
-	}
+	defer response.Body.Close()
 }
 
 func MetricSys(m metric.Metrics) {
@@ -477,9 +422,7 @@ func MetricSys(m metric.Metrics) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	if response.StatusCode != http.StatusOK {
-		//TODO
-	}
+	defer response.Body.Close()
 }
 
 func MetricTotalAlloc(m metric.Metrics) {
@@ -494,9 +437,7 @@ func MetricTotalAlloc(m metric.Metrics) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	if response.StatusCode != http.StatusOK {
-		//TODO
-	}
+	defer response.Body.Close()
 }
 
 func MetricPollCount(m metric.Metrics) {
@@ -511,9 +452,7 @@ func MetricPollCount(m metric.Metrics) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	if response.StatusCode != http.StatusOK {
-		//TODO
-	}
+	defer response.Body.Close()
 }
 
 func MetricRandomValue(m metric.Metrics) {
@@ -528,7 +467,5 @@ func MetricRandomValue(m metric.Metrics) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	if response.StatusCode != http.StatusOK {
-		//TODO
-	}
+	defer response.Body.Close()
 }

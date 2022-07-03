@@ -46,15 +46,10 @@ func installHandlers(s *http.Server) {
 
 func main() {
 
-	go func() {
-		s := &http.Server{
-			Addr: servAddr + ":" + servPort,
-		}
-		installHandlers(s)
-		s.ListenAndServe()
-	}()
-
-	for {
+	s := &http.Server{
+		Addr: servAddr + ":" + servPort,
 	}
+	installHandlers(s)
+	s.ListenAndServe()
 
 }
