@@ -16,20 +16,28 @@ const (
 
 func main() {
 
-	m := metric.Metrics{}
-
-	updateTime := time.NewTicker(pollInterval)
-	reportTime := time.NewTicker(reportInterval)
-
 	shutdown := make(chan os.Signal, 1)
 	signal.Notify(shutdown, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
 
-	select {
-	case <-updateTime.C:
-		m.Update()
-	case <-reportTime.C:
-		send.AllMetrics(m)
-	}
+	currMetric := metric.Metrics{}
+	m := make(chan metric.Metrics)
+
+	go func() {
+		for {
+			updateTime := time.NewTicker(pollInterval)
+			<-updateTime.C
+			currMetric.Update()
+			m <- currMetric
+		}
+	}()
+
+	go func() {
+		for {
+			reportTime := time.NewTicker(reportInterval)
+			<-reportTime.C
+			send.AllMetrics(<-m)
+		}
+	}()
 
 	<-shutdown
 	os.Exit(0)
