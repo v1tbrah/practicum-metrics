@@ -5,7 +5,6 @@ import (
 	"github.com/v1tbrah/metricsAndAlerting/internal/metric"
 	"os"
 	"os/signal"
-	"sync"
 	"syscall"
 	"time"
 )
@@ -21,27 +20,22 @@ func main() {
 	signal.Notify(shutdown, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
 
 	currMetric := metric.Metrics{}
-	var mutex sync.Mutex
 
-	go func(mutex *sync.Mutex) {
+	go func() {
 		updateTime := time.NewTicker(pollInterval)
 		for {
 			<-updateTime.C
-			mutex.Lock()
 			currMetric.Update()
-			mutex.Unlock()
 		}
-	}(&mutex)
+	}()
 
-	go func(mutex *sync.Mutex) {
+	go func() {
 		reportTime := time.NewTicker(reportInterval)
 		for {
 			<-reportTime.C
-			mutex.Lock()
 			send.AllMetrics(currMetric)
-			mutex.Unlock()
 		}
-	}(&mutex)
+	}()
 
 	<-shutdown
 	os.Exit(0)
