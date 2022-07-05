@@ -23,8 +23,8 @@ func main() {
 	m := make(chan metric.Metrics)
 
 	go func() {
+		updateTime := time.NewTicker(pollInterval)
 		for {
-			updateTime := time.NewTicker(pollInterval)
 			<-updateTime.C
 			currMetric.Update()
 			m <- currMetric
@@ -32,8 +32,8 @@ func main() {
 	}()
 
 	go func() {
+		reportTime := time.NewTicker(reportInterval)
 		for {
-			reportTime := time.NewTicker(reportInterval)
 			<-reportTime.C
 			send.AllMetrics(<-m)
 		}
