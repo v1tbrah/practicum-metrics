@@ -7,8 +7,8 @@ import (
 
 func main() {
 
-	myApi := api.New()
+	myAPI := api.New()
 
-	log.Fatalln(myApi.Run())
+	log.Fatalln(myAPI.Run())
 
 }

@@ -43,10 +43,6 @@ var supportedGaugeMetrics = map[string]struct{}{
 	"RandomValue":   struct{}{},
 }
 
-var supportedCounterMetrics = map[string]struct{}{
-	"PollCount": struct{}{},
-}
-
 func UpdateHandler(metric *metric.Metrics) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -103,11 +99,6 @@ func gaugeHandler(metric *metric.Metrics, infoM []string, w http.ResponseWriter,
 }
 
 func counterHandler(metric *metric.Metrics, infoM []string, w http.ResponseWriter, r *http.Request) {
-	nameM := infoM[0]
-	if _, ok := supportedCounterMetrics[nameM]; !ok {
-		http.Error(w, fmt.Sprintf("Metric name: '%s' unsupported", nameM), http.StatusBadRequest)
-		return
-	}
 	metric.PollCount++
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusOK)
