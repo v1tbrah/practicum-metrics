@@ -25,6 +25,15 @@ func UpdateHandler(metric *metric.Metrics) http.HandlerFunc {
 			http.Error(w, "Have no metric type", http.StatusNotFound)
 			return
 		}
+		handler, ok := supportedHandlers[infoM[0]]
+		if !ok {
+			if infoM[0] == "" {
+				http.Error(w, fmt.Sprintf("Metric type: '%s' unsupported", infoM[0]), http.StatusNotFound)
+			} else {
+				http.Error(w, fmt.Sprintf("Metric type: '%s' unsupported", infoM[0]), http.StatusNotImplemented)
+			}
+			return
+		}
 		if infoMLen == 1 {
 			http.Error(w, "Have no metric name", http.StatusNotFound)
 			return
@@ -33,11 +42,9 @@ func UpdateHandler(metric *metric.Metrics) http.HandlerFunc {
 			http.Error(w, "Have no metric value", http.StatusNotFound)
 			return
 		}
-		if handler, ok := supportedHandlers[infoM[0]]; ok {
-			handler(metric, infoM[1:], w, r)
-			return
-		}
-		http.Error(w, fmt.Sprintf("Metric type: '%s' unsupported", infoM[0]), http.StatusNotFound)
+
+		handler(metric, infoM[1:], w, r)
+
 	}
 }
 
@@ -64,7 +71,7 @@ func gaugeHandler(metric *metric.Metrics, infoM []string, w http.ResponseWriter,
 
 func counterHandler(metric *metric.Metrics, infoM []string, w http.ResponseWriter, r *http.Request) {
 	if _, err := strconv.Atoi(infoM[1]); err != nil {
-		http.Error(w, fmt.Sprintf("invalid value"), http.StatusBadRequest)
+		http.Error(w, "invalid value", http.StatusBadRequest)
 	}
 	metric.PollCount++
 	w.Header().Set("Content-Type", "text/plain")

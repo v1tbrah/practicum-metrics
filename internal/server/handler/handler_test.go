@@ -113,6 +113,19 @@ func TestUpdateHandler(t *testing.T) {
 				statusCode:  http.StatusBadRequest,
 			},
 		},
+		{
+			name: "TestCounterHandlers/update_invalid_type",
+			args: args{
+				request: &http.Request{
+					Method: http.MethodPost,
+					URL:    &url.URL{Path: "/update/unknown/testCounter/100"},
+					Header: map[string][]string{"Content-Type": []string{"text/plain"}}},
+			},
+			want: want{
+				contentType: "text/plain",
+				statusCode:  http.StatusNotImplemented,
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
