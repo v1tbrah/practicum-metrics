@@ -48,23 +48,8 @@ func TestUpdateHandler(t *testing.T) {
 				statusCode:  http.StatusMethodNotAllowed,
 			},
 		},
-		/*
-			{
-				name: "Test StatusUnsupportedMediaType",
-				args: args{
-					request: &http.Request{
-						Method: http.MethodPost,
-						URL:    &url.URL{Path: "/update/gauge/Alloc/1.0"},
-						Header: map[string][]string{"Content-Type": []string{"text/html; charset=UTF-8"}}},
-				},
-				want: want{
-					contentType: "text/plain",
-					statusCode:  http.StatusUnsupportedMediaType,
-				},
-			},
-		*/
 		{
-			name: "Test StatusBadRequest 1",
+			name: "Test StatusNotFound 1",
 			args: args{
 				request: &http.Request{
 					Method: http.MethodPost,
@@ -73,11 +58,11 @@ func TestUpdateHandler(t *testing.T) {
 			},
 			want: want{
 				contentType: "text/plain",
-				statusCode:  http.StatusBadRequest,
+				statusCode:  http.StatusNotFound,
 			},
 		},
 		{
-			name: "Test StatusBadRequest 2",
+			name: "Test StatusNotFound 2",
 			args: args{
 				request: &http.Request{
 					Method: http.MethodPost,
@@ -86,11 +71,11 @@ func TestUpdateHandler(t *testing.T) {
 			},
 			want: want{
 				contentType: "text/plain",
-				statusCode:  http.StatusBadRequest,
+				statusCode:  http.StatusNotFound,
 			},
 		},
 		{
-			name: "Test StatusBadRequest 3",
+			name: "Test StatusNotFound 3",
 			args: args{
 				request: &http.Request{
 					Method: http.MethodPost,
@@ -99,11 +84,11 @@ func TestUpdateHandler(t *testing.T) {
 			},
 			want: want{
 				contentType: "text/plain",
-				statusCode:  http.StatusBadRequest,
+				statusCode:  http.StatusNotFound,
 			},
 		},
 		{
-			name: "Test StatusBadRequest 4",
+			name: "Test StatusNotFound 4",
 			args: args{
 				request: &http.Request{
 					Method: http.MethodPost,
@@ -112,7 +97,7 @@ func TestUpdateHandler(t *testing.T) {
 			},
 			want: want{
 				contentType: "text/plain",
-				statusCode:  http.StatusBadRequest,
+				statusCode:  http.StatusNotFound,
 			},
 		},
 	}
