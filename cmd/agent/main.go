@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/v1tbrah/metricsAndAlerting/internal/agent/send"
 	"github.com/v1tbrah/metricsAndAlerting/internal/metric"
+	"log"
 	"os"
 	"os/signal"
 	"syscall"
@@ -19,7 +20,7 @@ func main() {
 	shutdown := make(chan os.Signal, 1)
 	signal.Notify(shutdown, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
 
-	currMetric := metric.Metrics{}
+	currMetric := metric.New()
 
 	go func() {
 		updateTime := time.NewTicker(pollInterval)
@@ -33,7 +34,9 @@ func main() {
 		reportTime := time.NewTicker(reportInterval)
 		for {
 			<-reportTime.C
-			send.AllMetrics(currMetric)
+			if err := send.AllMetrics(currMetric); err != nil {
+				log.Fatalln(err)
+			}
 		}
 	}()
 
