@@ -13,36 +13,6 @@ var supportedHandlers = map[string]func(metric *metric.Metrics, infoM []string, 
 	"counter": counterHandler,
 }
 
-var supportedGaugeMetrics = map[string]struct{}{
-	"Alloc":         struct{}{},
-	"BuckHashSys":   struct{}{},
-	"Frees":         struct{}{},
-	"GCCPUFraction": struct{}{},
-	"HeapAlloc":     struct{}{},
-	"HeapIdle":      struct{}{},
-	"HeapInuse":     struct{}{},
-	"HeapObjects":   struct{}{},
-	"HeapReleased":  struct{}{},
-	"HeapSys":       struct{}{},
-	"LastGC":        struct{}{},
-	"Lookups":       struct{}{},
-	"MCacheInuse":   struct{}{},
-	"MCacheSys":     struct{}{},
-	"MSpanInuse":    struct{}{},
-	"MSpanSys":      struct{}{},
-	"Mallocs":       struct{}{},
-	"NextGC":        struct{}{},
-	"NumForcedGC":   struct{}{},
-	"NumGC":         struct{}{},
-	"OtherSys":      struct{}{},
-	"PauseTotalNs":  struct{}{},
-	"StackInuse":    struct{}{},
-	"StackSys":      struct{}{},
-	"Sys":           struct{}{},
-	"TotalAlloc":    struct{}{},
-	"RandomValue":   struct{}{},
-}
-
 func UpdateHandler(metric *metric.Metrics) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -72,27 +42,30 @@ func UpdateHandler(metric *metric.Metrics) http.HandlerFunc {
 }
 
 func gaugeHandler(metric *metric.Metrics, infoM []string, w http.ResponseWriter, r *http.Request) {
+
+	strValM := infoM[1]
+	if strValM == "" {
+		http.Error(w, "have no value", http.StatusNotFound)
+		return
+	}
+	valM, err := strconv.ParseFloat(strValM, 64)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("%s", err), http.StatusBadRequest)
+		return
+	}
+
 	nameM := infoM[0]
-	if _, ok := supportedGaugeMetrics[nameM]; !ok {
-		http.Error(w, fmt.Sprintf("Metric name: '%s' unsupported", nameM), http.StatusNotFound)
-		return
-	}
-	valM, err := strconv.ParseFloat(infoM[1], 64)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("%s", err), http.StatusNotFound)
-		return
-	}
-	err = metric.Set(nameM, valM)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("%s", err), http.StatusNotFound)
-		return
-	}
+	metric.Set(nameM, valM)
+
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(""))
 }
 
 func counterHandler(metric *metric.Metrics, infoM []string, w http.ResponseWriter, r *http.Request) {
+	if _, err := strconv.Atoi(infoM[1]); err != nil {
+		http.Error(w, fmt.Sprintf("invalid value"), http.StatusBadRequest)
+	}
 	metric.PollCount++
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusOK)

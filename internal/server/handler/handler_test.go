@@ -88,7 +88,7 @@ func TestUpdateHandler(t *testing.T) {
 			},
 		},
 		{
-			name: "Test StatusNotFound 4",
+			name: "Test StatusBadRequest",
 			args: args{
 				request: &http.Request{
 					Method: http.MethodPost,
@@ -97,7 +97,20 @@ func TestUpdateHandler(t *testing.T) {
 			},
 			want: want{
 				contentType: "text/plain",
-				statusCode:  http.StatusNotFound,
+				statusCode:  http.StatusBadRequest,
+			},
+		},
+		{
+			name: "TestCounterHandlers/invalid_value",
+			args: args{
+				request: &http.Request{
+					Method: http.MethodPost,
+					URL:    &url.URL{Path: "/update/counter/testCounter/none"},
+					Header: map[string][]string{"Content-Type": []string{"text/plain"}}},
+			},
+			want: want{
+				contentType: "text/plain",
+				statusCode:  http.StatusBadRequest,
 			},
 		},
 	}
