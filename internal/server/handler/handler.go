@@ -8,7 +8,29 @@ import (
 	"strings"
 )
 
-var supportedHandlers = map[string]func(metric *metric.Metrics, infoM []string, w http.ResponseWriter, r *http.Request){
+type infoM struct {
+	typeM string
+	nameM string
+	valM  string
+}
+
+func newInfoM(urlPath string) *infoM {
+	newInfoM := infoM{}
+	arrInfoM := strings.Split(strings.TrimPrefix(urlPath, "/update/"), "/")
+	lenArrInfoM := len(arrInfoM)
+	if lenArrInfoM > 0 {
+		newInfoM.typeM = arrInfoM[0]
+	}
+	if lenArrInfoM > 1 {
+		newInfoM.nameM = arrInfoM[1]
+	}
+	if lenArrInfoM > 2 {
+		newInfoM.valM = arrInfoM[2]
+	}
+	return &newInfoM
+}
+
+var supportedHandlers = map[string]func(metric *metric.Metrics, infoM *infoM, w http.ResponseWriter, r *http.Request){
 	"gauge":   gaugeHandler,
 	"counter": counterHandler,
 }
@@ -19,58 +41,47 @@ func UpdateHandler(metric *metric.Metrics) http.HandlerFunc {
 			http.Error(w, fmt.Sprintf("Method '%s' not allowed", r.Method), http.StatusMethodNotAllowed)
 			return
 		}
-		infoM := strings.Split(strings.TrimPrefix(r.URL.Path, "/update/"), "/")
-		infoMLen := len(infoM)
-		if infoMLen == 0 {
-			http.Error(w, "Have no metric type", http.StatusNotFound)
+		infoM := newInfoM(r.URL.Path)
+		if infoM.typeM == "" {
+			http.Error(w, "metric type not specified", http.StatusNotFound)
 			return
 		}
-		handler, ok := supportedHandlers[infoM[0]]
+		handler, ok := supportedHandlers[infoM.typeM]
 		if !ok {
-			if infoM[0] == "" {
-				http.Error(w, fmt.Sprintf("Metric type: '%s' unsupported", infoM[0]), http.StatusNotFound)
-			} else {
-				http.Error(w, fmt.Sprintf("Metric type: '%s' unsupported", infoM[0]), http.StatusNotImplemented)
-			}
+			http.Error(w, fmt.Sprintf("metric type: '%s' not implemented", infoM.typeM), http.StatusNotImplemented)
 			return
 		}
-		if infoMLen == 1 {
-			http.Error(w, "Have no metric name", http.StatusNotFound)
+		if infoM.nameM == "" {
+			http.Error(w, "metric name not specified", http.StatusNotFound)
 			return
 		}
-		if infoMLen == 2 {
-			http.Error(w, "Have no metric value", http.StatusNotFound)
+		if infoM.valM == "" {
+			http.Error(w, "metric value not specified", http.StatusNotFound)
 			return
 		}
 
-		handler(metric, infoM[1:], w, r)
+		handler(metric, infoM, w, r)
 
 	}
 }
 
-func gaugeHandler(metric *metric.Metrics, infoM []string, w http.ResponseWriter, r *http.Request) {
+func gaugeHandler(metric *metric.Metrics, infoM *infoM, w http.ResponseWriter, r *http.Request) {
 
-	strValM := infoM[1]
-	if strValM == "" {
-		http.Error(w, "have no value", http.StatusNotFound)
-		return
-	}
-	valM, err := strconv.ParseFloat(strValM, 64)
+	valM, err := strconv.ParseFloat(infoM.valM, 64)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("%s", err), http.StatusBadRequest)
 		return
 	}
 
-	nameM := infoM[0]
-	metric.Set(nameM, valM)
+	metric.Set(infoM.nameM, valM)
 
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(""))
 }
 
-func counterHandler(metric *metric.Metrics, infoM []string, w http.ResponseWriter, r *http.Request) {
-	if _, err := strconv.Atoi(infoM[1]); err != nil {
+func counterHandler(metric *metric.Metrics, infoM *infoM, w http.ResponseWriter, r *http.Request) {
+	if _, err := strconv.Atoi(infoM.valM); err != nil {
 		http.Error(w, "invalid value", http.StatusBadRequest)
 	}
 	metric.PollCount++

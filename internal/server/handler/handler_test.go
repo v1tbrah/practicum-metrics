@@ -23,20 +23,7 @@ func TestUpdateHandler(t *testing.T) {
 		want want
 	}{
 		{
-			name: "Test StatusOK",
-			args: args{
-				request: &http.Request{
-					Method: http.MethodPost,
-					URL:    &url.URL{Path: "/update/gauge/Alloc/1.0"},
-					Header: map[string][]string{"Content-Type": []string{"text/plain"}}},
-			},
-			want: want{
-				contentType: "text/plain",
-				statusCode:  http.StatusOK,
-			},
-		},
-		{
-			name: "Test StatusMethodNotAllowed",
+			name: "Test Update Not allowed method",
 			args: args{
 				request: &http.Request{
 					Method: http.MethodGet,
@@ -49,7 +36,33 @@ func TestUpdateHandler(t *testing.T) {
 			},
 		},
 		{
-			name: "Test StatusNotFound 1",
+			name: "Test Update Gauge OK",
+			args: args{
+				request: &http.Request{
+					Method: http.MethodPost,
+					URL:    &url.URL{Path: "/update/gauge/Alloc/1.0"},
+					Header: map[string][]string{"Content-Type": []string{"text/plain"}}},
+			},
+			want: want{
+				contentType: "text/plain",
+				statusCode:  http.StatusOK,
+			},
+		},
+		{
+			name: "Test Update Counter OK",
+			args: args{
+				request: &http.Request{
+					Method: http.MethodPost,
+					URL:    &url.URL{Path: "/update/counter/PollCount/1"},
+					Header: map[string][]string{"Content-Type": []string{"text/plain"}}},
+			},
+			want: want{
+				contentType: "text/plain",
+				statusCode:  http.StatusOK,
+			},
+		},
+		{
+			name: "Test Update /update/ Not Found",
 			args: args{
 				request: &http.Request{
 					Method: http.MethodPost,
@@ -62,7 +75,20 @@ func TestUpdateHandler(t *testing.T) {
 			},
 		},
 		{
-			name: "Test StatusNotFound 2",
+			name: "Test Update /update/unknown/ Not Implemented",
+			args: args{
+				request: &http.Request{
+					Method: http.MethodPost,
+					URL:    &url.URL{Path: "/update/unknown/testCounter/100"},
+					Header: map[string][]string{"Content-Type": []string{"text/plain"}}},
+			},
+			want: want{
+				contentType: "text/plain",
+				statusCode:  http.StatusNotImplemented,
+			},
+		},
+		{
+			name: "Test Update /update/gauge/ Not Found",
 			args: args{
 				request: &http.Request{
 					Method: http.MethodPost,
@@ -75,11 +101,11 @@ func TestUpdateHandler(t *testing.T) {
 			},
 		},
 		{
-			name: "Test StatusNotFound 3",
+			name: "Test Update /update/counter/ Not Found",
 			args: args{
 				request: &http.Request{
 					Method: http.MethodPost,
-					URL:    &url.URL{Path: "/update/gauge/Alloc/"},
+					URL:    &url.URL{Path: "/update/counter/"},
 					Header: map[string][]string{"Content-Type": []string{"text/plain"}}},
 			},
 			want: want{
@@ -88,7 +114,33 @@ func TestUpdateHandler(t *testing.T) {
 			},
 		},
 		{
-			name: "Test StatusBadRequest",
+			name: "Test Update /update/gauge/testNameM/",
+			args: args{
+				request: &http.Request{
+					Method: http.MethodPost,
+					URL:    &url.URL{Path: "/update/gauge/testNameM/"},
+					Header: map[string][]string{"Content-Type": []string{"text/plain"}}},
+			},
+			want: want{
+				contentType: "text/plain",
+				statusCode:  http.StatusNotFound,
+			},
+		},
+		{
+			name: "Test Update /update/counter/testNameM/",
+			args: args{
+				request: &http.Request{
+					Method: http.MethodPost,
+					URL:    &url.URL{Path: "/update/counter/testNameM/"},
+					Header: map[string][]string{"Content-Type": []string{"text/plain"}}},
+			},
+			want: want{
+				contentType: "text/plain",
+				statusCode:  http.StatusNotFound,
+			},
+		},
+		{
+			name: "Test Update /update/gauge/Alloc/- Bad Request (invalid value)",
 			args: args{
 				request: &http.Request{
 					Method: http.MethodPost,
@@ -101,29 +153,16 @@ func TestUpdateHandler(t *testing.T) {
 			},
 		},
 		{
-			name: "TestCounterHandlers/invalid_value",
+			name: "Test Update /update/counter/PollCount/1.0 Bad Request (invalid value)",
 			args: args{
 				request: &http.Request{
 					Method: http.MethodPost,
-					URL:    &url.URL{Path: "/update/counter/testCounter/none"},
+					URL:    &url.URL{Path: "/update/counter/PollCount/1.0"},
 					Header: map[string][]string{"Content-Type": []string{"text/plain"}}},
 			},
 			want: want{
 				contentType: "text/plain",
 				statusCode:  http.StatusBadRequest,
-			},
-		},
-		{
-			name: "TestCounterHandlers/update_invalid_type",
-			args: args{
-				request: &http.Request{
-					Method: http.MethodPost,
-					URL:    &url.URL{Path: "/update/unknown/testCounter/100"},
-					Header: map[string][]string{"Content-Type": []string{"text/plain"}}},
-			},
-			want: want{
-				contentType: "text/plain",
-				statusCode:  http.StatusNotImplemented,
 			},
 		},
 	}
