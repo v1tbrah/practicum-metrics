@@ -53,10 +53,12 @@ func UpdateHandler(metric *metric.Metrics) http.HandlerFunc {
 			http.Error(w, fmt.Sprintf("Method '%s' not allowed", r.Method), http.StatusMethodNotAllowed)
 			return
 		}
-		if r.Header.Get("Content-Type") != "text/plain" {
-			http.Error(w, fmt.Sprintf("Content-type '%s' unsupported", r.Header.Get("Content-Type")), http.StatusUnsupportedMediaType)
-			return
-		}
+		/*
+			if r.Header.Get("Content-Type") != "text/plain" {
+				http.Error(w, fmt.Sprintf("Content-type '%s' unsupported", r.Header.Get("Content-Type")), http.StatusUnsupportedMediaType)
+				return
+			}
+		*/
 		infoM := strings.Split(strings.TrimPrefix(r.URL.Path, "/update/"), "/")
 		infoMLen := len(infoM)
 		if infoMLen == 0 {

@@ -48,19 +48,21 @@ func TestUpdateHandler(t *testing.T) {
 				statusCode:  http.StatusMethodNotAllowed,
 			},
 		},
-		{
-			name: "Test StatusUnsupportedMediaType",
-			args: args{
-				request: &http.Request{
-					Method: http.MethodPost,
-					URL:    &url.URL{Path: "/update/gauge/Alloc/1.0"},
-					Header: map[string][]string{"Content-Type": []string{"text/html; charset=UTF-8"}}},
+		/*
+			{
+				name: "Test StatusUnsupportedMediaType",
+				args: args{
+					request: &http.Request{
+						Method: http.MethodPost,
+						URL:    &url.URL{Path: "/update/gauge/Alloc/1.0"},
+						Header: map[string][]string{"Content-Type": []string{"text/html; charset=UTF-8"}}},
+				},
+				want: want{
+					contentType: "text/plain",
+					statusCode:  http.StatusUnsupportedMediaType,
+				},
 			},
-			want: want{
-				contentType: "text/plain",
-				statusCode:  http.StatusUnsupportedMediaType,
-			},
-		},
+		*/
 		{
 			name: "Test StatusBadRequest 1",
 			args: args{
@@ -121,6 +123,7 @@ func TestUpdateHandler(t *testing.T) {
 			h := http.HandlerFunc(UpdateHandler(&metric.Metrics{}))
 			h.ServeHTTP(w, request)
 			result := w.Result()
+			defer result.Body.Close()
 
 			require.Equal(t, tt.want.statusCode, result.StatusCode)
 			if result.StatusCode == http.StatusOK {
