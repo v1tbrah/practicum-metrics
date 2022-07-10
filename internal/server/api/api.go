@@ -1,6 +1,7 @@
 package api
 
 import (
+	"github.com/go-chi/chi/v5"
 	"github.com/v1tbrah/metricsAndAlerting/internal/metric"
 	"github.com/v1tbrah/metricsAndAlerting/internal/server/handler"
 	"net/http"
@@ -11,17 +12,31 @@ const (
 )
 
 type api struct {
-	Metrics *metric.Metrics
 	serv    *http.Server
+	metrics *metric.Metrics
 }
 
-func New() *api {
-	return &api{serv: &http.Server{Addr: addr}, Metrics: metric.New()}
+func NewAPI() *api {
+	metrics := metric.New()
+	return &api{
+		serv: &http.Server{
+			Addr:    addr,
+			Handler: NewRouter(metrics)},
+		metrics: metrics}
+}
+
+func NewRouter(m *metric.Metrics) chi.Router {
+	r := chi.NewRouter()
+	r.Get("/", handler.GetAllMetricsHTML(m))
+	r.Post("/update/{type}/{metric}/{val}", handler.UpdateHandler(m))
+	r.Get("/value/{type}/{metric}", handler.GetValueHandler(m))
+	return r
 }
 
 func (a *api) Run() error {
-	mux := http.NewServeMux()
-	mux.HandleFunc("/update/", handler.UpdateHandler(a.Metrics))
-	a.serv.Handler = mux
 	return a.serv.ListenAndServe()
+}
+
+func (a *api) Metrics() *metric.Metrics {
+	return a.metrics
 }
