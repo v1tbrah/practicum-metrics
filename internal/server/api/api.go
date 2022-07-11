@@ -36,7 +36,3 @@ func NewRouter(m *metric.Metrics) chi.Router {
 func (a *api) Run() error {
 	return a.serv.ListenAndServe()
 }
-
-func (a *api) Metrics() *metric.Metrics {
-	return a.metrics
-}
