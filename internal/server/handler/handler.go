@@ -108,7 +108,7 @@ func updateCounterHandler(metrics *metric.Metrics, infoFromURL *infoM, w http.Re
 	}
 	metricsOfType, err := metrics.MetricsOfType(infoFromURL.typeM)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("%s", err), http.StatusBadRequest)
+		http.Error(w, fmt.Sprintf("%s", err), http.StatusNotImplemented)
 		return
 	}
 	currVal := 0
@@ -125,14 +125,24 @@ func updateCounterHandler(metrics *metric.Metrics, infoFromURL *infoM, w http.Re
 func GetValueHandler(metrics *metric.Metrics) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		infoFromURL := newInfoFromGetValueURL(r.URL.Path)
+		if infoFromURL.typeM == "" {
+			http.Error(w, "metric type not specified", http.StatusNotFound)
+			return
+		}
 		if infoFromURL.nameM == "" {
 			http.Error(w, "metric name not specified", http.StatusNotFound)
 			return
 		}
 
-		valM, err := metrics.MetricOfTypeAndName(infoFromURL.typeM, infoFromURL.nameM)
+		metricsOfType, err := metrics.MetricsOfType(infoFromURL.typeM)
 		if err != nil {
-			http.Error(w, "metric name not specified", http.StatusNotFound)
+			http.Error(w, fmt.Sprintf("%s", err), http.StatusNotImplemented)
+			return
+		}
+
+		valM, ok := metricsOfType[infoFromURL.nameM]
+		if !ok {
+			http.Error(w, "metric not found", http.StatusNotFound)
 			return
 		}
 

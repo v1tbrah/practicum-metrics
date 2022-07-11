@@ -184,8 +184,22 @@ func TestUpdateHandler(t *testing.T) {
 }
 
 func TestGetValueHandler(t *testing.T) {
+
+	var metricWithAlloc = metric.NewMetrics()
+	mWA, _ := metricWithAlloc.MetricsOfType("gauge")
+	mWA["Alloc"] = "2.432"
+
+	var metricWithoutAlloc = metric.NewMetrics()
+
+	var metricWithPollCount = metric.NewMetrics()
+	mWP, _ := metricWithPollCount.MetricsOfType("counter")
+	mWP["PollCount"] = "1"
+
+	var metricWithoutPollCount = metric.NewMetrics()
+
 	type args struct {
 		request *http.Request
+		metrics *metric.Metrics
 	}
 	type want struct {
 		contentType string
@@ -203,6 +217,7 @@ func TestGetValueHandler(t *testing.T) {
 					Method: http.MethodGet,
 					URL:    &url.URL{Path: "/value/gauge/Alloc"},
 					Header: map[string][]string{"Content-Type": []string{"text/plain"}}},
+				metrics: metricWithAlloc,
 			},
 			want: want{
 				contentType: "text/plain",
@@ -216,6 +231,7 @@ func TestGetValueHandler(t *testing.T) {
 					Method: http.MethodGet,
 					URL:    &url.URL{Path: "/value/counter/PollCount"},
 					Header: map[string][]string{"Content-Type": []string{"text/plain"}}},
+				metrics: metricWithPollCount,
 			},
 			want: want{
 				contentType: "text/plain",
@@ -229,6 +245,7 @@ func TestGetValueHandler(t *testing.T) {
 					Method: http.MethodGet,
 					URL:    &url.URL{Path: "/value/"},
 					Header: map[string][]string{"Content-Type": []string{"text/plain"}}},
+				metrics: metricWithAlloc,
 			},
 			want: want{
 				contentType: "text/plain",
@@ -236,16 +253,17 @@ func TestGetValueHandler(t *testing.T) {
 			},
 		},
 		{
-			name: "Test Value /value/unknown/unknown - Not Found (invalid type)",
+			name: "Test Value /value/unknown/unknown - Not Implemented (invalid type)",
 			args: args{
 				request: &http.Request{
 					Method: http.MethodGet,
 					URL:    &url.URL{Path: "/value/unknown/unknown"},
 					Header: map[string][]string{"Content-Type": []string{"text/plain"}}},
+				metrics: metricWithAlloc,
 			},
 			want: want{
 				contentType: "text/plain",
-				statusCode:  http.StatusNotFound,
+				statusCode:  http.StatusNotImplemented,
 			},
 		},
 		{
@@ -255,10 +273,25 @@ func TestGetValueHandler(t *testing.T) {
 					Method: http.MethodGet,
 					URL:    &url.URL{Path: "/value/gauge/unknown"},
 					Header: map[string][]string{"Content-Type": []string{"text/plain"}}},
+				metrics: metricWithoutAlloc,
 			},
 			want: want{
 				contentType: "text/plain",
-				statusCode:  http.StatusOK,
+				statusCode:  http.StatusNotFound,
+			},
+		},
+		{
+			name: "Test Value /value/counter/unknown - Not Found (invalid name)",
+			args: args{
+				request: &http.Request{
+					Method: http.MethodGet,
+					URL:    &url.URL{Path: "/value/counter/unknown"},
+					Header: map[string][]string{"Content-Type": []string{"text/plain"}}},
+				metrics: metricWithoutPollCount,
+			},
+			want: want{
+				contentType: "text/plain",
+				statusCode:  http.StatusNotFound,
 			},
 		},
 	}
@@ -266,7 +299,7 @@ func TestGetValueHandler(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			request := tt.args.request
 			w := httptest.NewRecorder()
-			h := http.HandlerFunc(GetValueHandler(metric.NewMetrics()))
+			h := http.HandlerFunc(GetValueHandler(tt.args.metrics))
 			h.ServeHTTP(w, request)
 			result := w.Result()
 			defer result.Body.Close()

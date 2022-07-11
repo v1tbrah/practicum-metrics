@@ -5,6 +5,7 @@ import (
 )
 
 const ErrInvalidType = "invalid type of metric"
+const ErrUnknownMetric = "unknown metric"
 
 type Metrics struct {
 	gauge   map[string]string
@@ -26,16 +27,5 @@ func (m Metrics) MetricsOfType(typeM string) (map[string]string, error) {
 		return m.counter, nil
 	default:
 		return nil, errors.New(ErrInvalidType)
-	}
-}
-
-func (m Metrics) MetricOfTypeAndName(typeM, nameM string) (string, error) {
-	switch typeM {
-	case "gauge":
-		return m.gauge[nameM], nil
-	case "counter":
-		return m.counter[nameM], nil
-	default:
-		return "", errors.New(ErrInvalidType)
 	}
 }
