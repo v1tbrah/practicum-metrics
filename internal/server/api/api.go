@@ -2,7 +2,7 @@ package api
 
 import (
 	"github.com/go-chi/chi/v5"
-	"github.com/v1tbrah/metricsAndAlerting/internal/metric"
+	"github.com/v1tbrah/metricsAndAlerting/internal/server/api/metric"
 	"github.com/v1tbrah/metricsAndAlerting/internal/server/handler"
 	"net/http"
 )
@@ -17,7 +17,7 @@ type api struct {
 }
 
 func NewAPI() *api {
-	metrics := metric.New()
+	metrics := metric.NewMetrics()
 	return &api{
 		serv: &http.Server{
 			Addr:    addr,

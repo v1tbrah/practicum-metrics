@@ -2,7 +2,7 @@ package handler
 
 import (
 	"github.com/stretchr/testify/require"
-	"github.com/v1tbrah/metricsAndAlerting/internal/metric"
+	"github.com/v1tbrah/metricsAndAlerting/internal/server/api/metric"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -170,7 +170,7 @@ func TestUpdateHandler(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			request := tt.args.request
 			w := httptest.NewRecorder()
-			h := http.HandlerFunc(UpdateHandler(&metric.Metrics{}))
+			h := http.HandlerFunc(UpdateHandler(metric.NewMetrics()))
 			h.ServeHTTP(w, request)
 			result := w.Result()
 			defer result.Body.Close()
@@ -258,7 +258,7 @@ func TestGetValueHandler(t *testing.T) {
 			},
 			want: want{
 				contentType: "text/plain",
-				statusCode:  http.StatusNotFound,
+				statusCode:  http.StatusOK,
 			},
 		},
 	}
@@ -266,7 +266,7 @@ func TestGetValueHandler(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			request := tt.args.request
 			w := httptest.NewRecorder()
-			h := http.HandlerFunc(GetValueHandler(&metric.Metrics{}))
+			h := http.HandlerFunc(GetValueHandler(metric.NewMetrics()))
 			h.ServeHTTP(w, request)
 			result := w.Result()
 			defer result.Body.Close()

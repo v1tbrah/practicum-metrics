@@ -2,7 +2,7 @@ package agent
 
 import (
 	"github.com/go-resty/resty/v2"
-	"github.com/v1tbrah/metricsAndAlerting/internal/metric"
+	"github.com/v1tbrah/metricsAndAlerting/internal/agent/metric"
 	"log"
 	"os"
 	"os/signal"

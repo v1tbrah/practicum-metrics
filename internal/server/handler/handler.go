@@ -2,7 +2,7 @@ package handler
 
 import (
 	"fmt"
-	"github.com/v1tbrah/metricsAndAlerting/internal/metric"
+	"github.com/v1tbrah/metricsAndAlerting/internal/server/api/metric"
 	"github.com/v1tbrah/metricsAndAlerting/internal/server/page"
 	"log"
 	"net/http"
@@ -82,23 +82,42 @@ func UpdateHandler(metrics *metric.Metrics) http.HandlerFunc {
 
 func updateGaugeHandler(metrics *metric.Metrics, infoFromURL *infoM, w http.ResponseWriter, r *http.Request) {
 
-	valM, err := strconv.ParseFloat(infoFromURL.valM, 64)
+	_, err := strconv.ParseFloat(infoFromURL.valM, 64)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("%s", err), http.StatusBadRequest)
 		return
 	}
 
-	metrics.Set(infoFromURL.nameM, valM)
+	metricsOfType, err := metrics.MetricsOfType(infoFromURL.typeM)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("%s", err), http.StatusBadRequest)
+		return
+	}
+	metricsOfType[infoFromURL.nameM] = infoFromURL.valM
 
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusOK)
 }
 
 func updateCounterHandler(metrics *metric.Metrics, infoFromURL *infoM, w http.ResponseWriter, r *http.Request) {
-	if _, err := strconv.Atoi(infoFromURL.valM); err != nil {
+
+	valM, err := strconv.Atoi(infoFromURL.valM)
+	if err != nil {
 		http.Error(w, "invalid value", http.StatusBadRequest)
+		return
 	}
-	metrics.PollCount++
+	metricsOfType, err := metrics.MetricsOfType(infoFromURL.typeM)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("%s", err), http.StatusBadRequest)
+		return
+	}
+	currVal := 0
+	currStrVal, ok := metricsOfType[infoFromURL.nameM]
+	if ok {
+		currVal, _ = strconv.Atoi(currStrVal)
+	}
+	metricsOfType[infoFromURL.nameM] = strconv.Itoa(valM + currVal)
+
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusOK)
 }
@@ -111,7 +130,7 @@ func GetValueHandler(metrics *metric.Metrics) http.HandlerFunc {
 			return
 		}
 
-		infoM, err := metrics.Info(infoFromURL.nameM)
+		valM, err := metrics.MetricOfTypeAndName(infoFromURL.typeM, infoFromURL.nameM)
 		if err != nil {
 			http.Error(w, "metric name not specified", http.StatusNotFound)
 			return
@@ -119,7 +138,7 @@ func GetValueHandler(metrics *metric.Metrics) http.HandlerFunc {
 
 		w.Header().Set("Content-Type", "text/plain")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(infoM.ValM()))
+		w.Write([]byte(valM))
 
 	}
 }
@@ -141,92 +160,16 @@ func GetAllMetricsHTML(metrics *metric.Metrics) http.HandlerFunc {
 
 func fillMetricsForHTML(mForHTML *[]string, metrics *metric.Metrics) {
 
-	if infoM, err := metrics.Info("Alloc"); err == nil {
-		*mForHTML = append(*mForHTML, string(infoM.NameM()+": "+infoM.ValM()))
+	if gaugeMetrics, err := metrics.MetricsOfType("gauge"); err == nil {
+		for nameM, valM := range gaugeMetrics {
+			*mForHTML = append(*mForHTML, string(nameM+": "+valM))
+		}
 	}
-	if infoM, err := metrics.Info("BuckHashSys"); err == nil {
-		*mForHTML = append(*mForHTML, string(infoM.NameM()+": "+infoM.ValM()))
-	}
-	if infoM, err := metrics.Info("Frees"); err == nil {
-		*mForHTML = append(*mForHTML, string(infoM.NameM()+": "+infoM.ValM()))
-	}
-	if infoM, err := metrics.Info("GCCPUFraction"); err == nil {
-		*mForHTML = append(*mForHTML, string(infoM.NameM()+": "+infoM.ValM()))
-	}
-	if infoM, err := metrics.Info("GCSys"); err == nil {
-		*mForHTML = append(*mForHTML, string(infoM.NameM()+": "+infoM.ValM()))
-	}
-	if infoM, err := metrics.Info("HeapAlloc"); err == nil {
-		*mForHTML = append(*mForHTML, string(infoM.NameM()+": "+infoM.ValM()))
-	}
-	if infoM, err := metrics.Info("HeapIdle"); err == nil {
-		*mForHTML = append(*mForHTML, string(infoM.NameM()+": "+infoM.ValM()))
-	}
-	if infoM, err := metrics.Info("HeapInuse"); err == nil {
-		*mForHTML = append(*mForHTML, string(infoM.NameM()+": "+infoM.ValM()))
-	}
-	if infoM, err := metrics.Info("HeapObjects"); err == nil {
-		*mForHTML = append(*mForHTML, string(infoM.NameM()+": "+infoM.ValM()))
-	}
-	if infoM, err := metrics.Info("HeapReleased"); err == nil {
-		*mForHTML = append(*mForHTML, string(infoM.NameM()+": "+infoM.ValM()))
-	}
-	if infoM, err := metrics.Info("HeapSys"); err == nil {
-		*mForHTML = append(*mForHTML, string(infoM.NameM()+": "+infoM.ValM()))
-	}
-	if infoM, err := metrics.Info("LastGC"); err == nil {
-		*mForHTML = append(*mForHTML, string(infoM.NameM()+": "+infoM.ValM()))
-	}
-	if infoM, err := metrics.Info("Lookups"); err == nil {
-		*mForHTML = append(*mForHTML, string(infoM.NameM()+": "+infoM.ValM()))
-	}
-	if infoM, err := metrics.Info("MCacheInuse"); err == nil {
-		*mForHTML = append(*mForHTML, string(infoM.NameM()+": "+infoM.ValM()))
-	}
-	if infoM, err := metrics.Info("MCacheSys"); err == nil {
-		*mForHTML = append(*mForHTML, string(infoM.NameM()+": "+infoM.ValM()))
-	}
-	if infoM, err := metrics.Info("MSpanInuse"); err == nil {
-		*mForHTML = append(*mForHTML, string(infoM.NameM()+": "+infoM.ValM()))
-	}
-	if infoM, err := metrics.Info("MSpanSys"); err == nil {
-		*mForHTML = append(*mForHTML, string(infoM.NameM()+": "+infoM.ValM()))
-	}
-	if infoM, err := metrics.Info("Mallocs"); err == nil {
-		*mForHTML = append(*mForHTML, string(infoM.NameM()+": "+infoM.ValM()))
-	}
-	if infoM, err := metrics.Info("NextGC"); err == nil {
-		*mForHTML = append(*mForHTML, string(infoM.NameM()+": "+infoM.ValM()))
-	}
-	if infoM, err := metrics.Info("NumForcedGC"); err == nil {
-		*mForHTML = append(*mForHTML, string(infoM.NameM()+": "+infoM.ValM()))
-	}
-	if infoM, err := metrics.Info("NumGC"); err == nil {
-		*mForHTML = append(*mForHTML, string(infoM.NameM()+": "+infoM.ValM()))
-	}
-	if infoM, err := metrics.Info("OtherSys"); err == nil {
-		*mForHTML = append(*mForHTML, string(infoM.NameM()+": "+infoM.ValM()))
-	}
-	if infoM, err := metrics.Info("PauseTotalNs"); err == nil {
-		*mForHTML = append(*mForHTML, string(infoM.NameM()+": "+infoM.ValM()))
-	}
-	if infoM, err := metrics.Info("StackInuse"); err == nil {
-		*mForHTML = append(*mForHTML, string(infoM.NameM()+": "+infoM.ValM()))
-	}
-	if infoM, err := metrics.Info("StackSys"); err == nil {
-		*mForHTML = append(*mForHTML, string(infoM.NameM()+": "+infoM.ValM()))
-	}
-	if infoM, err := metrics.Info("Sys"); err == nil {
-		*mForHTML = append(*mForHTML, string(infoM.NameM()+": "+infoM.ValM()))
-	}
-	if infoM, err := metrics.Info("TotalAlloc"); err == nil {
-		*mForHTML = append(*mForHTML, string(infoM.NameM()+": "+infoM.ValM()))
-	}
-	if infoM, err := metrics.Info("PollCount"); err == nil {
-		*mForHTML = append(*mForHTML, string(infoM.NameM()+": "+infoM.ValM()))
-	}
-	if infoM, err := metrics.Info("RandomValue"); err == nil {
-		*mForHTML = append(*mForHTML, string(infoM.NameM()+": "+infoM.ValM()))
+
+	if counterMetrics, err := metrics.MetricsOfType("counter"); err == nil {
+		for nameM, valM := range counterMetrics {
+			*mForHTML = append(*mForHTML, string(nameM+": "+valM))
+		}
 	}
 
 }
