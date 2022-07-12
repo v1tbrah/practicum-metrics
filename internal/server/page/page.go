@@ -23,7 +23,7 @@ const tpl = `
 	<body>
 		<h1> Metrics </h1>
 		<ul>
-		{{range .Metrics}}<li>{{ . }}</li>{{else}}<div><strong>Have no info</strong></div>{{end}}
+		{{range .Metrics}}<li>{{ . }}</li>{{else}}<div><strong>Have no information</strong></div>{{end}}
 		</ul>
 	</body>
 </page>`
