@@ -189,10 +189,10 @@ func TestUpdateHandler(t *testing.T) {
 
 func TestGetValueHandler(t *testing.T) {
 
-	testApi := NewAPI(service.NewService(memory.NewMemStorage()))
+	testAPI := NewAPI(service.NewService(memory.NewMemStorage()))
 
-	testApiWithAllocMetric := NewAPI(service.NewService(memory.NewMemStorage()))
-	gaugeMetrics, _ := testApiWithAllocMetric.service.MemStorage.Metrics.MetricsOfType("gauge")
+	testAPIWithAllocMetric := NewAPI(service.NewService(memory.NewMemStorage()))
+	gaugeMetrics, _ := testAPIWithAllocMetric.service.MemStorage.Metrics.MetricsOfType("gauge")
 	gaugeMetrics.Store("Alloc", "2.222")
 
 	testApiWithCounterMetric := NewAPI(service.NewService(memory.NewMemStorage()))
@@ -219,7 +219,7 @@ func TestGetValueHandler(t *testing.T) {
 					Method: http.MethodGet,
 					URL:    &url.URL{Path: "/value/gauge/Alloc"},
 					Header: map[string][]string{"Content-Type": []string{"text/plain"}}},
-				api: testApiWithAllocMetric,
+				api: testAPIWithAllocMetric,
 			},
 			want: want{
 				contentType: "text/plain",
@@ -247,7 +247,7 @@ func TestGetValueHandler(t *testing.T) {
 					Method: http.MethodGet,
 					URL:    &url.URL{Path: "/value/"},
 					Header: map[string][]string{"Content-Type": []string{"text/plain"}}},
-				api: testApi,
+				api: testAPI,
 			},
 			want: want{
 				contentType: "text/plain",
@@ -261,7 +261,7 @@ func TestGetValueHandler(t *testing.T) {
 					Method: http.MethodGet,
 					URL:    &url.URL{Path: "/value/unknown/unknown"},
 					Header: map[string][]string{"Content-Type": []string{"text/plain"}}},
-				api: testApi,
+				api: testAPI,
 			},
 			want: want{
 				contentType: "text/plain",
@@ -275,7 +275,7 @@ func TestGetValueHandler(t *testing.T) {
 					Method: http.MethodGet,
 					URL:    &url.URL{Path: "/value/gauge/unknown"},
 					Header: map[string][]string{"Content-Type": []string{"text/plain"}}},
-				api: testApi,
+				api: testAPI,
 			},
 			want: want{
 				contentType: "text/plain",
@@ -289,7 +289,7 @@ func TestGetValueHandler(t *testing.T) {
 					Method: http.MethodGet,
 					URL:    &url.URL{Path: "/value/counter/unknown"},
 					Header: map[string][]string{"Content-Type": []string{"text/plain"}}},
-				api: testApi,
+				api: testAPI,
 			},
 			want: want{
 				contentType: "text/plain",
