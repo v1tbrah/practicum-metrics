@@ -1,47 +1,45 @@
-package handler
+package api
 
 import (
-	"github.com/stretchr/testify/require"
-	"github.com/v1tbrah/metricsAndAlerting/internal/server/api/metric"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"testing"
+
+	"github.com/stretchr/testify/require"
+
+	"github.com/v1tbrah/metricsAndAlerting/internal/server/repo/memory"
+	"github.com/v1tbrah/metricsAndAlerting/internal/server/service"
 )
 
 func TestUpdateHandler(t *testing.T) {
+
+	testApi := NewAPI(service.NewService(memory.NewMemStorage()))
+	defaultHeader := map[string][]string{"Content-Type": []string{"text/plain"}}
+
 	type args struct {
 		request *http.Request
+		api     *api
 	}
+
 	type want struct {
 		contentType string
 		statusCode  int
 	}
+
 	tests := []struct {
 		name string
 		args args
 		want want
 	}{
 		{
-			name: "Test Update Not allowed method",
-			args: args{
-				request: &http.Request{
-					Method: http.MethodGet,
-					URL:    &url.URL{Path: "/update/gauge/Alloc/1.0"},
-					Header: map[string][]string{"Content-Type": []string{"text/plain"}}},
-			},
-			want: want{
-				contentType: "text/plain",
-				statusCode:  http.StatusMethodNotAllowed,
-			},
-		},
-		{
 			name: "Test Update Gauge OK",
 			args: args{
 				request: &http.Request{
 					Method: http.MethodPost,
 					URL:    &url.URL{Path: "/update/gauge/Alloc/1.0"},
-					Header: map[string][]string{"Content-Type": []string{"text/plain"}}},
+					Header: defaultHeader},
+				api: testApi,
 			},
 			want: want{
 				contentType: "text/plain",
@@ -54,7 +52,8 @@ func TestUpdateHandler(t *testing.T) {
 				request: &http.Request{
 					Method: http.MethodPost,
 					URL:    &url.URL{Path: "/update/counter/PollCount/1"},
-					Header: map[string][]string{"Content-Type": []string{"text/plain"}}},
+					Header: defaultHeader},
+				api: testApi,
 			},
 			want: want{
 				contentType: "text/plain",
@@ -67,7 +66,8 @@ func TestUpdateHandler(t *testing.T) {
 				request: &http.Request{
 					Method: http.MethodPost,
 					URL:    &url.URL{Path: "/update/"},
-					Header: map[string][]string{"Content-Type": []string{"text/plain"}}},
+					Header: defaultHeader},
+				api: testApi,
 			},
 			want: want{
 				contentType: "text/plain",
@@ -80,7 +80,8 @@ func TestUpdateHandler(t *testing.T) {
 				request: &http.Request{
 					Method: http.MethodPost,
 					URL:    &url.URL{Path: "/update/unknown/testCounter/100"},
-					Header: map[string][]string{"Content-Type": []string{"text/plain"}}},
+					Header: defaultHeader},
+				api: testApi,
 			},
 			want: want{
 				contentType: "text/plain",
@@ -93,7 +94,8 @@ func TestUpdateHandler(t *testing.T) {
 				request: &http.Request{
 					Method: http.MethodPost,
 					URL:    &url.URL{Path: "/update/gauge/"},
-					Header: map[string][]string{"Content-Type": []string{"text/plain"}}},
+					Header: defaultHeader},
+				api: testApi,
 			},
 			want: want{
 				contentType: "text/plain",
@@ -106,7 +108,8 @@ func TestUpdateHandler(t *testing.T) {
 				request: &http.Request{
 					Method: http.MethodPost,
 					URL:    &url.URL{Path: "/update/counter/"},
-					Header: map[string][]string{"Content-Type": []string{"text/plain"}}},
+					Header: defaultHeader},
+				api: testApi,
 			},
 			want: want{
 				contentType: "text/plain",
@@ -119,7 +122,8 @@ func TestUpdateHandler(t *testing.T) {
 				request: &http.Request{
 					Method: http.MethodPost,
 					URL:    &url.URL{Path: "/update/gauge/testNameM/"},
-					Header: map[string][]string{"Content-Type": []string{"text/plain"}}},
+					Header: defaultHeader},
+				api: NewAPI(service.NewService(memory.NewMemStorage())),
 			},
 			want: want{
 				contentType: "text/plain",
@@ -132,7 +136,7 @@ func TestUpdateHandler(t *testing.T) {
 				request: &http.Request{
 					Method: http.MethodPost,
 					URL:    &url.URL{Path: "/update/counter/testNameM/"},
-					Header: map[string][]string{"Content-Type": []string{"text/plain"}}},
+					Header: defaultHeader},
 			},
 			want: want{
 				contentType: "text/plain",
@@ -145,7 +149,7 @@ func TestUpdateHandler(t *testing.T) {
 				request: &http.Request{
 					Method: http.MethodPost,
 					URL:    &url.URL{Path: "/update/gauge/Alloc/-"},
-					Header: map[string][]string{"Content-Type": []string{"text/plain"}}},
+					Header: defaultHeader},
 			},
 			want: want{
 				contentType: "text/plain",
@@ -158,7 +162,7 @@ func TestUpdateHandler(t *testing.T) {
 				request: &http.Request{
 					Method: http.MethodPost,
 					URL:    &url.URL{Path: "/update/counter/PollCount/1.0"},
-					Header: map[string][]string{"Content-Type": []string{"text/plain"}}},
+					Header: defaultHeader},
 			},
 			want: want{
 				contentType: "text/plain",
@@ -170,7 +174,7 @@ func TestUpdateHandler(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			request := tt.args.request
 			w := httptest.NewRecorder()
-			h := http.HandlerFunc(UpdateHandler(metric.NewMetrics()))
+			h := http.HandlerFunc(checkTypeAndNameMetric("update", tt.args.api.updateHandler()))
 			h.ServeHTTP(w, request)
 			result := w.Result()
 			defer result.Body.Close()
@@ -185,21 +189,19 @@ func TestUpdateHandler(t *testing.T) {
 
 func TestGetValueHandler(t *testing.T) {
 
-	var metricWithAlloc = metric.NewMetrics()
-	mWA, _ := metricWithAlloc.MetricsOfType("gauge")
-	mWA["Alloc"] = "2.432"
+	testApi := NewAPI(service.NewService(memory.NewMemStorage()))
 
-	var metricWithoutAlloc = metric.NewMetrics()
+	testApiWithAllocMetric := NewAPI(service.NewService(memory.NewMemStorage()))
+	gaugeMetrics, _ := testApiWithAllocMetric.service.MemStorage.Metrics.MetricsOfType("gauge")
+	gaugeMetrics.Store("Alloc", "2.222")
 
-	var metricWithPollCount = metric.NewMetrics()
-	mWP, _ := metricWithPollCount.MetricsOfType("counter")
-	mWP["PollCount"] = "1"
-
-	var metricWithoutPollCount = metric.NewMetrics()
+	testApiWithCounterMetric := NewAPI(service.NewService(memory.NewMemStorage()))
+	counterMetrics, _ := testApiWithCounterMetric.service.MemStorage.Metrics.MetricsOfType("counter")
+	counterMetrics.Store("PollCount", "7")
 
 	type args struct {
 		request *http.Request
-		metrics *metric.Metrics
+		api     *api
 	}
 	type want struct {
 		contentType string
@@ -217,7 +219,7 @@ func TestGetValueHandler(t *testing.T) {
 					Method: http.MethodGet,
 					URL:    &url.URL{Path: "/value/gauge/Alloc"},
 					Header: map[string][]string{"Content-Type": []string{"text/plain"}}},
-				metrics: metricWithAlloc,
+				api: testApiWithAllocMetric,
 			},
 			want: want{
 				contentType: "text/plain",
@@ -231,7 +233,7 @@ func TestGetValueHandler(t *testing.T) {
 					Method: http.MethodGet,
 					URL:    &url.URL{Path: "/value/counter/PollCount"},
 					Header: map[string][]string{"Content-Type": []string{"text/plain"}}},
-				metrics: metricWithPollCount,
+				api: testApiWithCounterMetric,
 			},
 			want: want{
 				contentType: "text/plain",
@@ -245,7 +247,7 @@ func TestGetValueHandler(t *testing.T) {
 					Method: http.MethodGet,
 					URL:    &url.URL{Path: "/value/"},
 					Header: map[string][]string{"Content-Type": []string{"text/plain"}}},
-				metrics: metricWithAlloc,
+				api: testApi,
 			},
 			want: want{
 				contentType: "text/plain",
@@ -259,7 +261,7 @@ func TestGetValueHandler(t *testing.T) {
 					Method: http.MethodGet,
 					URL:    &url.URL{Path: "/value/unknown/unknown"},
 					Header: map[string][]string{"Content-Type": []string{"text/plain"}}},
-				metrics: metricWithAlloc,
+				api: testApi,
 			},
 			want: want{
 				contentType: "text/plain",
@@ -273,7 +275,7 @@ func TestGetValueHandler(t *testing.T) {
 					Method: http.MethodGet,
 					URL:    &url.URL{Path: "/value/gauge/unknown"},
 					Header: map[string][]string{"Content-Type": []string{"text/plain"}}},
-				metrics: metricWithoutAlloc,
+				api: testApi,
 			},
 			want: want{
 				contentType: "text/plain",
@@ -287,7 +289,7 @@ func TestGetValueHandler(t *testing.T) {
 					Method: http.MethodGet,
 					URL:    &url.URL{Path: "/value/counter/unknown"},
 					Header: map[string][]string{"Content-Type": []string{"text/plain"}}},
-				metrics: metricWithoutPollCount,
+				api: testApi,
 			},
 			want: want{
 				contentType: "text/plain",
@@ -299,7 +301,7 @@ func TestGetValueHandler(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			request := tt.args.request
 			w := httptest.NewRecorder()
-			h := http.HandlerFunc(GetValueHandler(tt.args.metrics))
+			h := http.HandlerFunc(checkTypeAndNameMetric("value", tt.args.api.getValueHandler()))
 			h.ServeHTTP(w, request)
 			result := w.Result()
 			defer result.Body.Close()

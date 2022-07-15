@@ -1,20 +1,11 @@
-package page
+package service
 
 import (
 	"bytes"
-	"html/template"
+	"text/template"
 )
 
-type dataForHTML struct {
-	Title   string
-	Metrics []string
-}
-
-func NewData() *dataForHTML {
-	return &dataForHTML{Title: "Metrics"}
-}
-
-const tpl = `
+const pageTpl = `
 <!DOCTYPE page>
 <page>
 	<head>
@@ -28,9 +19,20 @@ const tpl = `
 	</body>
 </page>`
 
-func (m *dataForHTML) CompletedTpl() (string, error) {
+type dataForPage struct {
+	Title   string
+	Metrics []string
+}
+
+// Creates a dataForPage.
+func NewDataForPage() *dataForPage {
+	return &dataForPage{Title: "Metrics"}
+}
+
+// Returns the completed start page template.
+func (m *dataForPage) Page() (string, error) {
 	buf := &bytes.Buffer{}
-	t, err := template.New("webpage").Parse(tpl)
+	t, err := template.New("webpage").Parse(pageTpl)
 	if err != nil {
 		return "", err
 	}

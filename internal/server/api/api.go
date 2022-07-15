@@ -1,38 +1,43 @@
 package api
 
 import (
-	"github.com/go-chi/chi/v5"
-	"github.com/v1tbrah/metricsAndAlerting/internal/server/api/metric"
-	"github.com/v1tbrah/metricsAndAlerting/internal/server/handler"
 	"net/http"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
+
+	"github.com/v1tbrah/metricsAndAlerting/internal/server/service"
 )
 
-const (
-	addr = "127.0.0.1:8080"
-)
+const addr = "127.0.0.1:8080"
 
 type api struct {
-	serv    *http.Server
-	metrics *metric.Metrics
+	server  *http.Server
+	service *service.Service
 }
 
-func NewAPI() *api {
-	metrics := metric.NewMetrics()
-	return &api{
-		serv: &http.Server{
-			Addr:    addr,
-			Handler: NewRouter(metrics)},
-		metrics: metrics}
+// Creates the API.
+func NewAPI(service *service.Service) *api {
+	newAPI := &api{
+		server:  &http.Server{Addr: addr},
+		service: service}
+	newAPI.server.Handler = newAPI.newRouter()
+	return newAPI
 }
 
-func NewRouter(m *metric.Metrics) chi.Router {
-	r := chi.NewRouter()
-	r.Get("/", handler.GetAllMetricsHTML(m))
-	r.Post("/update/{type}/{metric}/{val}", handler.UpdateHandler(m))
-	r.Get("/value/{type}/{metric}", handler.GetValueHandler(m))
-	return r
-}
-
+//The API starts.
 func (a *api) Run() error {
-	return a.serv.ListenAndServe()
+	return a.server.ListenAndServe()
+}
+
+func (a *api) newRouter() chi.Router {
+	r := chi.NewRouter()
+
+	r.Use(middleware.Logger)
+
+	r.Get("/", a.getPageHandler())
+	r.Post("/update/{type}/{metric}/{val}", checkTypeAndNameMetric("update", a.updateHandler()))
+	r.Get("/value/{type}/{metric}", checkTypeAndNameMetric("value", a.getValueHandler()))
+
+	return r
 }

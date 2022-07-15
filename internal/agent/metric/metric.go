@@ -46,74 +46,12 @@ type Metrics struct {
 	RandomValue   gauge
 }
 
+// Creates a Metrics.
 func New() *Metrics {
 	return &Metrics{}
 }
 
-func (m *Metrics) Set(name string, val gauge) error {
-	switch name {
-	case "Alloc":
-		m.Alloc = val
-	case "BuckHashSys":
-		m.BuckHashSys = val
-	case "Frees":
-		m.Frees = val
-	case "GCCPUFraction":
-		m.GCCPUFraction = val
-	case "GCSys":
-		m.GCSys = val
-	case "HeapAlloc":
-		m.HeapAlloc = val
-	case "HeapIdle":
-		m.HeapIdle = val
-	case "HeapInuse":
-		m.HeapInuse = val
-	case "HeapObjects":
-		m.HeapObjects = val
-	case "HeapReleased":
-		m.HeapReleased = val
-	case "HeapSys":
-		m.HeapSys = val
-	case "LastGC":
-		m.LastGC = val
-	case "Lookups":
-		m.Lookups = val
-	case "MCacheInuse":
-		m.MCacheInuse = val
-	case "MCacheSys":
-		m.MCacheSys = val
-	case "MSpanInuse":
-		m.MSpanInuse = val
-	case "MSpanSys":
-		m.MSpanSys = val
-	case "Mallocs":
-		m.Mallocs = val
-	case "NextGC":
-		m.NextGC = val
-	case "NumForcedGC":
-		m.NumForcedGC = val
-	case "NumGC":
-		m.NumGC = val
-	case "OtherSys":
-		m.OtherSys = val
-	case "PauseTotalNs":
-		m.PauseTotalNs = val
-	case "StackInuse":
-		m.StackInuse = val
-	case "StackSys":
-		m.StackSys = val
-	case "Sys":
-		m.Sys = val
-	case "TotalAlloc":
-		m.TotalAlloc = val
-	case "RandomValue":
-		m.RandomValue = val
-	default:
-		return ErrIsNotAMetric
-	}
-	return nil
-}
-
+// Updates metrics. Gauge metrics are read from runtime.ReadMemStats.
 func (m *Metrics) Update() {
 	m.updateGauge()
 	m.PollCount++

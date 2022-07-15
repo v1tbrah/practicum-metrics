@@ -8,6 +8,7 @@ type Info struct {
 	valM  string
 }
 
+// Returns Info about a metric by metric name.
 func (m *Metrics) Info(name string) (Info, error) {
 	info := Info{nameM: name}
 	switch name {
@@ -104,14 +105,17 @@ func (m *Metrics) Info(name string) (Info, error) {
 	return info, nil
 }
 
+// Return metric type.
 func (i *Info) TypeM() string {
 	return i.typeM
 }
 
+// Return metric name.
 func (i *Info) NameM() string {
 	return i.nameM
 }
 
+// Return metric value.
 func (i *Info) ValM() string {
 	return i.valM
 }
