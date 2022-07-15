@@ -14,7 +14,7 @@ import (
 
 func TestUpdateHandler(t *testing.T) {
 
-	testApi := NewAPI(service.NewService(memory.NewMemStorage()))
+	testAPI := NewAPI(service.NewService(memory.NewMemStorage()))
 	defaultHeader := map[string][]string{"Content-Type": []string{"text/plain"}}
 
 	type args struct {
@@ -39,7 +39,7 @@ func TestUpdateHandler(t *testing.T) {
 					Method: http.MethodPost,
 					URL:    &url.URL{Path: "/update/gauge/Alloc/1.0"},
 					Header: defaultHeader},
-				api: testApi,
+				api: testAPI,
 			},
 			want: want{
 				contentType: "text/plain",
@@ -53,7 +53,7 @@ func TestUpdateHandler(t *testing.T) {
 					Method: http.MethodPost,
 					URL:    &url.URL{Path: "/update/counter/PollCount/1"},
 					Header: defaultHeader},
-				api: testApi,
+				api: testAPI,
 			},
 			want: want{
 				contentType: "text/plain",
@@ -67,7 +67,7 @@ func TestUpdateHandler(t *testing.T) {
 					Method: http.MethodPost,
 					URL:    &url.URL{Path: "/update/"},
 					Header: defaultHeader},
-				api: testApi,
+				api: testAPI,
 			},
 			want: want{
 				contentType: "text/plain",
@@ -81,7 +81,7 @@ func TestUpdateHandler(t *testing.T) {
 					Method: http.MethodPost,
 					URL:    &url.URL{Path: "/update/unknown/testCounter/100"},
 					Header: defaultHeader},
-				api: testApi,
+				api: testAPI,
 			},
 			want: want{
 				contentType: "text/plain",
@@ -95,7 +95,7 @@ func TestUpdateHandler(t *testing.T) {
 					Method: http.MethodPost,
 					URL:    &url.URL{Path: "/update/gauge/"},
 					Header: defaultHeader},
-				api: testApi,
+				api: testAPI,
 			},
 			want: want{
 				contentType: "text/plain",
@@ -109,7 +109,7 @@ func TestUpdateHandler(t *testing.T) {
 					Method: http.MethodPost,
 					URL:    &url.URL{Path: "/update/counter/"},
 					Header: defaultHeader},
-				api: testApi,
+				api: testAPI,
 			},
 			want: want{
 				contentType: "text/plain",
@@ -195,8 +195,8 @@ func TestGetValueHandler(t *testing.T) {
 	gaugeMetrics, _ := testAPIWithAllocMetric.service.MemStorage.Metrics.MetricsOfType("gauge")
 	gaugeMetrics.Store("Alloc", "2.222")
 
-	testApiWithCounterMetric := NewAPI(service.NewService(memory.NewMemStorage()))
-	counterMetrics, _ := testApiWithCounterMetric.service.MemStorage.Metrics.MetricsOfType("counter")
+	testAPIWithCounterMetric := NewAPI(service.NewService(memory.NewMemStorage()))
+	counterMetrics, _ := testAPIWithCounterMetric.service.MemStorage.Metrics.MetricsOfType("counter")
 	counterMetrics.Store("PollCount", "7")
 
 	type args struct {
@@ -233,7 +233,7 @@ func TestGetValueHandler(t *testing.T) {
 					Method: http.MethodGet,
 					URL:    &url.URL{Path: "/value/counter/PollCount"},
 					Header: map[string][]string{"Content-Type": []string{"text/plain"}}},
-				api: testApiWithCounterMetric,
+				api: testAPIWithCounterMetric,
 			},
 			want: want{
 				contentType: "text/plain",
