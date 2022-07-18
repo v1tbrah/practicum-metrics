@@ -62,8 +62,8 @@ func (a *agent) Run() {
 	go func() {
 		updateTime := time.NewTicker(a.options.pollInterval)
 		for {
-			mutex.Lock()
 			<-updateTime.C
+			mutex.Lock()
 			a.metrics.Update()
 			log.Println("Metrics updated successfully.")
 			mutex.Unlock()
@@ -73,8 +73,8 @@ func (a *agent) Run() {
 	go func() {
 		reportTime := time.NewTicker(a.options.reportInterval)
 		for {
-			mutex.Lock()
 			<-reportTime.C
+			mutex.Lock()
 			if err := a.sendAllMetrics(); err != nil {
 				log.Fatalln(err)
 			}
