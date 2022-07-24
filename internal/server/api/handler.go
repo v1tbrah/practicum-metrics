@@ -1,43 +1,79 @@
 package api
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"sort"
-	"strconv"
 	"sync"
 
 	"github.com/v1tbrah/metricsAndAlerting/internal/server/repo/metric"
 	"github.com/v1tbrah/metricsAndAlerting/internal/server/service"
 )
 
-func (a *api) updateHandler() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		infoFromURL := newInfoUpdateURL(r.URL.Path)
-		switch infoFromURL.typeM {
-		case "gauge":
-			a.updateGaugeHandler(infoFromURL, w, r)
-		case "counter":
-			a.updateCounterHandler(infoFromURL, w, r)
-		}
+var (
+	ErrMetricTypeNotSpecified   = errors.New("metric type not specified")
+	ErrMetricTypeNotImplemented = errors.New("metric type not implemented")
+	ErrMetricNameNotSpecified   = errors.New("metric name not specified")
+)
+
+func (a *api) updateHandler(w http.ResponseWriter, r *http.Request) {
+
+	metricFromRequest := metric.Metrics{}
+	if !tryFillMetricFromRequest(&metricFromRequest, w, r) {
+		return
+	}
+
+	switch metricFromRequest.MType {
+	case "gauge":
+		a.updateGaugeHandler(&metricFromRequest, w, r)
+	case "counter":
+		a.updateCounterHandler(&metricFromRequest, w, r)
 	}
 }
 
-func (a *api) getValueHandler() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		infoFromURL := newInfoGetValueURL(r.URL.Path)
-		metricsOfType, _ := a.service.MemStorage.Metrics.MetricsOfType(infoFromURL.typeM)
-		valM, ok := metricsOfType.Load(infoFromURL.nameM)
-		if !ok {
-			http.Error(w, "metric not found", http.StatusNotFound)
-			return
-		}
-		w.Header().Set("Content-Type", "text/plain")
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(valM.(string)))
-
+func (a *api) getValueHandler(w http.ResponseWriter, r *http.Request) {
+	metricFromRequest := metric.Metrics{}
+	if !tryFillMetricFromRequest(&metricFromRequest, w, r) {
+		return
 	}
+
+	metricOnServ, ok := a.service.MemStorage.Metrics.Load(metricFromRequest.ID)
+	if !ok {
+		http.Error(w, "metric not found", http.StatusNotFound)
+		return
+	}
+	resp, _ := json.Marshal(metricOnServ)
+	w.Write(resp)
+}
+
+func tryFillMetricFromRequest(fillableMetric *metric.Metrics, w http.ResponseWriter, r *http.Request) bool {
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return false
+	}
+	err = json.Unmarshal(body, &fillableMetric)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return false
+	}
+	if fillableMetric.MType == "" {
+		http.Error(w, fmt.Sprintf("%s", ErrMetricTypeNotSpecified), http.StatusNotFound)
+		return false
+	}
+	if !fillableMetric.TypeIsValid() {
+		http.Error(w, fmt.Sprintf("%s", ErrMetricTypeNotImplemented), http.StatusNotImplemented)
+		return false
+	}
+	if fillableMetric.ID == "" {
+		http.Error(w, fmt.Sprintf("%s", ErrMetricNameNotSpecified), http.StatusNotFound)
+		return false
+	}
+	return true
 }
 
 func (a *api) getPageHandler() http.HandlerFunc {
@@ -54,66 +90,60 @@ func (a *api) getPageHandler() http.HandlerFunc {
 	}
 }
 
-func (a *api) updateGaugeHandler(infoFromURL *infoURL, w http.ResponseWriter, r *http.Request) {
+func (a *api) updateGaugeHandler(newMetric *metric.Metrics, w http.ResponseWriter, r *http.Request) {
 
-	_, err := strconv.ParseFloat(infoFromURL.valM, 64)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("%s", err), http.StatusBadRequest)
-		return
+	interfaceMForUpd, ok := a.service.MemStorage.Metrics.Load(newMetric.ID)
+	var mForUpd *metric.Metrics
+	if !ok {
+		mForUpd = &metric.Metrics{}
+		mForUpd.ID = newMetric.ID
+		mForUpd.MType = newMetric.MType
+		var value float64
+		mForUpd.Value = &value
+	} else {
+		mForUpd = interfaceMForUpd.(*metric.Metrics)
 	}
+	*mForUpd.Value = *newMetric.Value
 
-	metricsOfType, err := a.service.MemStorage.Metrics.MetricsOfType(infoFromURL.typeM)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("%s", err), http.StatusBadRequest)
-		return
-	}
-	metricsOfType.Store(infoFromURL.nameM, infoFromURL.valM)
+	a.service.MemStorage.Metrics.Store(mForUpd.ID, mForUpd)
 
-	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusOK)
 }
 
-func (a *api) updateCounterHandler(infoFromURL *infoURL, w http.ResponseWriter, r *http.Request) {
+func (a *api) updateCounterHandler(newMetric *metric.Metrics, w http.ResponseWriter, r *http.Request) {
 
-	valM, err := strconv.Atoi(infoFromURL.valM)
-	if err != nil {
-		http.Error(w, "invalid value", http.StatusBadRequest)
-		return
+	interfaceMForUpd, ok := a.service.MemStorage.Metrics.Load(newMetric.ID)
+	var mForUpd *metric.Metrics
+	if !ok {
+		mForUpd = &metric.Metrics{}
+		mForUpd.ID = newMetric.ID
+		mForUpd.MType = newMetric.MType
+		var value int64
+		mForUpd.Delta = &value
+	} else {
+		mForUpd = interfaceMForUpd.(*metric.Metrics)
 	}
 
-	metricsOfType, err := a.service.MemStorage.Metrics.MetricsOfType(infoFromURL.typeM)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("%s", err), http.StatusNotImplemented)
-		return
-	}
+	*mForUpd.Delta = *newMetric.Delta
 
-	currVal := 0
-	currStrVal, ok := metricsOfType.Load(infoFromURL.nameM)
-	if ok {
-		currVal, _ = strconv.Atoi(currStrVal.(string))
-	}
-	metricsOfType.Store(infoFromURL.nameM, strconv.Itoa(valM+currVal))
+	a.service.MemStorage.Metrics.Store(mForUpd.ID, mForUpd)
 
-	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusOK)
 }
 
-func fillMetricsForPage(dataForPage *[]string, metrics *metric.Metrics) {
-	if gaugeMetrics, err := metrics.MetricsOfType("gauge"); err == nil {
-		*dataForPage = append(*dataForPage, sortedMetricsForPage(gaugeMetrics)...)
-	}
-	if counterMetrics, err := metrics.MetricsOfType("counter"); err == nil {
-		*dataForPage = append(*dataForPage, sortedMetricsForPage(counterMetrics)...)
-	}
+func fillMetricsForPage(dataForPage *[]string, metrics *sync.Map) {
+	*dataForPage = append(*dataForPage, sortedMetricsForPage(metrics)...)
 }
 
 func sortedMetricsForPage(metrics *sync.Map) []string {
-
 	sortedMetrics := []string{}
-	i := 0
 	metrics.Range(func(key, value any) bool {
-		sortedMetrics = append(sortedMetrics, key.(string)+": "+value.(string))
-		i++
+		metric := value.(*metric.Metrics)
+		if metric.MType == "gauge" {
+			sortedMetrics = append(sortedMetrics, metric.ID+": "+fmt.Sprintf("%f", *metric.Value))
+		} else if metric.MType == "counter" {
+			sortedMetrics = append(sortedMetrics, metric.ID+": "+fmt.Sprintf("%v", *metric.Delta))
+		}
 		return true
 	})
 

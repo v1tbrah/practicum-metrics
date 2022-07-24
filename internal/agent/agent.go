@@ -1,6 +1,7 @@
 package agent
 
 import (
+	"encoding/json"
 	"log"
 	"os"
 	"os/signal"
@@ -10,13 +11,14 @@ import (
 
 	"github.com/go-resty/resty/v2"
 
+	"github.com/v1tbrah/metricsAndAlerting/internal/agent/memory"
 	"github.com/v1tbrah/metricsAndAlerting/internal/agent/metric"
 )
 
 type agent struct {
 	client  *resty.Client
 	options *options
-	metrics *metric.Metrics
+	memory  *memory.MemStorage
 }
 
 type options struct {
@@ -28,24 +30,12 @@ type options struct {
 	contentType       string
 }
 
-func newDefaultOptions() *options {
-	srvAddr := "127.0.0.1:8080"
-	return &options{
-		pollInterval:      2 * time.Second,
-		reportInterval:    10 * time.Second,
-		srvAddr:           srvAddr,
-		updateTemplateURL: "http://" + srvAddr + "/update/{typeM}/{nameM}/{valM}",
-		getTemplateURL:    "http://" + srvAddr + "/value/{typeM}/{nameM}",
-		contentType:       "text/plain",
-	}
-}
-
 // Creates the agent instance with default settings.
 func NewAgent() *agent {
 	return &agent{
 		client:  resty.New(),
 		options: newDefaultOptions(),
-		metrics: metric.New()}
+		memory:  memory.NewMemStorage()}
 }
 
 //The agent starts updating the metrics once per pollInterval and sends them to the server once per reportInterval.
@@ -64,8 +54,8 @@ func (a *agent) Run() {
 		for {
 			<-updateTime.C
 			mutex.Lock()
-			a.metrics.Update()
-			log.Println("Metrics updated successfully.")
+			a.memory.Metrics.Update()
+			log.Println("AllMetrics updated successfully.")
 			mutex.Unlock()
 		}
 	}()
@@ -78,7 +68,7 @@ func (a *agent) Run() {
 			if err := a.sendAllMetrics(); err != nil {
 				log.Fatalln(err)
 			}
-			log.Println("Metrics sent successfully.")
+			log.Println("AllMetrics sent successfully.")
 			mutex.Unlock()
 		}
 	}()
@@ -88,166 +78,58 @@ func (a *agent) Run() {
 
 }
 
+func newDefaultOptions() *options {
+	srvAddr := "127.0.0.1:8080"
+	return &options{
+		pollInterval:      2 * time.Second,
+		reportInterval:    10 * time.Second,
+		srvAddr:           srvAddr,
+		updateTemplateURL: "http://" + srvAddr + "/update/",
+		getTemplateURL:    "http://" + srvAddr + "/value/",
+		contentType:       "application/json",
+	}
+}
+
 func (a *agent) sendAllMetrics() error {
 
-	if err := a.sendMetric("Alloc"); err != nil {
-		return err
-	}
-
-	if err := a.sendMetric("BuckHashSys"); err != nil {
-		return err
-	}
-
-	if err := a.sendMetric("Frees"); err != nil {
-		return err
-	}
-
-	if err := a.sendMetric("Frees"); err != nil {
-		return err
-	}
-
-	if err := a.sendMetric("GCCPUFraction"); err != nil {
-		return err
-	}
-
-	if err := a.sendMetric("GCSys"); err != nil {
-		return err
-	}
-
-	if err := a.sendMetric("HeapAlloc"); err != nil {
-		return err
-	}
-
-	if err := a.sendMetric("HeapIdle"); err != nil {
-		return err
-	}
-
-	if err := a.sendMetric("HeapInuse"); err != nil {
-		return err
-	}
-
-	if err := a.sendMetric("HeapObjects"); err != nil {
-		return err
-	}
-
-	if err := a.sendMetric("HeapReleased"); err != nil {
-		return err
-	}
-
-	if err := a.sendMetric("HeapSys"); err != nil {
-		return err
-	}
-
-	if err := a.sendMetric("LastGC"); err != nil {
-		return err
-	}
-
-	if err := a.sendMetric("Lookups"); err != nil {
-		return err
-	}
-
-	if err := a.sendMetric("MCacheInuse"); err != nil {
-		return err
-	}
-
-	if err := a.sendMetric("MCacheSys"); err != nil {
-		return err
-	}
-
-	if err := a.sendMetric("MSpanInuse"); err != nil {
-		return err
-	}
-
-	if err := a.sendMetric("MSpanSys"); err != nil {
-		return err
-	}
-
-	if err := a.sendMetric("NextGC"); err != nil {
-		return err
-	}
-
-	if err := a.sendMetric("NumForcedGC"); err != nil {
-		return err
-	}
-
-	if err := a.sendMetric("NumGC"); err != nil {
-		return err
-	}
-
-	if err := a.sendMetric("OtherSys"); err != nil {
-		return err
-	}
-
-	if err := a.sendMetric("PauseTotalNs"); err != nil {
-		return err
-	}
-
-	if err := a.sendMetric("StackInuse"); err != nil {
-		return err
-	}
-
-	if err := a.sendMetric("StackSys"); err != nil {
-		return err
-	}
-
-	if err := a.sendMetric("Sys"); err != nil {
-		return err
-	}
-
-	if err := a.sendMetric("TotalAlloc"); err != nil {
-		return err
-	}
-
-	if err := a.sendMetric("PollCount"); err != nil {
-		return err
-	}
-
-	if err := a.sendMetric("RandomValue"); err != nil {
-		return err
+	for _, metric := range *a.memory.Metrics {
+		if _, err := a.sendMetric(metric); err != nil {
+			return err
+		}
 	}
 
 	return nil
 }
 
-func (a *agent) sendMetric(nameM string) error {
+func (a *agent) sendMetric(metric metric.Metrics) (*resty.Response, error) {
 
-	infoM, err := a.metrics.Info(nameM)
+	body, err := json.Marshal(metric)
 	if err != nil {
-		return err
-	}
-
-	_, err = a.client.NewRequest().
-		SetHeader("Content-Type", a.options.contentType).
-		SetPathParams(map[string]string{
-			"typeM": infoM.TypeM(),
-			"nameM": infoM.NameM(),
-			"valM":  infoM.ValM()}).
-		Post(a.options.updateTemplateURL)
-
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (a *agent) getMetric(nameM string) (string, error) {
-
-	infoM, err := a.metrics.Info(nameM)
-	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	resp, err := a.client.NewRequest().
 		SetHeader("Content-Type", a.options.contentType).
-		SetPathParams(map[string]string{
-			"typeM": infoM.TypeM(),
-			"nameM": infoM.NameM()}).
-		Get(a.options.getTemplateURL)
+		SetBody(body).
+		Post(a.options.updateTemplateURL)
 
+	return resp, err
+}
+
+func (a *agent) getMetric(metric metric.Metrics) (*resty.Response, error) {
+
+	metric.Delta = nil
+	metric.Value = nil
+
+	body, err := json.Marshal(metric)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	return string(resp.Body()), nil
+	resp, err := a.client.NewRequest().
+		SetHeader("Content-Type", a.options.contentType).
+		SetBody(body).
+		Post(a.options.getTemplateURL)
+
+	return resp, err
 }

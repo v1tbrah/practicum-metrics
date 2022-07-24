@@ -1,9 +1,11 @@
 package api
 
 import (
+	"bytes"
+	"encoding/json"
+	"github.com/v1tbrah/metricsAndAlerting/internal/server/repo/metric"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -15,16 +17,15 @@ import (
 func TestUpdateHandler(t *testing.T) {
 
 	testAPI := NewAPI(service.NewService(memory.NewMemStorage()))
-	defaultHeader := map[string][]string{"Content-Type": []string{"text/plain"}}
+
+	localHost := "http://127.0.0.1:8080"
 
 	type args struct {
 		request *http.Request
-		api     *api
 	}
 
 	type want struct {
-		contentType string
-		statusCode  int
+		statusCode int
 	}
 
 	tests := []struct {
@@ -35,138 +36,73 @@ func TestUpdateHandler(t *testing.T) {
 		{
 			name: "Test Update Gauge OK",
 			args: args{
-				request: &http.Request{
-					Method: http.MethodPost,
-					URL:    &url.URL{Path: "/update/gauge/Alloc/1.0"},
-					Header: defaultHeader},
-				api: testAPI,
+				request: httptest.NewRequest(http.MethodPost, localHost+"/update/", updateBody("Alloc", "gauge", 1.22, 0)),
 			},
 			want: want{
-				contentType: "text/plain",
-				statusCode:  http.StatusOK,
+				statusCode: http.StatusOK,
 			},
 		},
 		{
 			name: "Test Update Counter OK",
 			args: args{
-				request: &http.Request{
-					Method: http.MethodPost,
-					URL:    &url.URL{Path: "/update/counter/PollCount/1"},
-					Header: defaultHeader},
-				api: testAPI,
+				request: httptest.NewRequest(http.MethodPost, localHost+"/update/", updateBody("PollCount", "counter", 0.0, 1)),
 			},
 			want: want{
-				contentType: "text/plain",
-				statusCode:  http.StatusOK,
+				statusCode: http.StatusOK,
 			},
 		},
 		{
 			name: "Test Update /update/ Not Found",
 			args: args{
-				request: &http.Request{
-					Method: http.MethodPost,
-					URL:    &url.URL{Path: "/update/"},
-					Header: defaultHeader},
-				api: testAPI,
+				request: httptest.NewRequest(http.MethodPost, localHost+"/update/", updateBody("", "", 0.0, 0)),
 			},
 			want: want{
-				contentType: "text/plain",
-				statusCode:  http.StatusNotFound,
+				statusCode: http.StatusNotFound,
 			},
 		},
 		{
 			name: "Test Update /update/unknown/ Not Implemented",
 			args: args{
-				request: &http.Request{
-					Method: http.MethodPost,
-					URL:    &url.URL{Path: "/update/unknown/testCounter/100"},
-					Header: defaultHeader},
-				api: testAPI,
+				request: httptest.NewRequest(http.MethodPost, localHost+"/update/", updateBody("", "unknown", 0.0, 0)),
 			},
 			want: want{
-				contentType: "text/plain",
-				statusCode:  http.StatusNotImplemented,
+				statusCode: http.StatusNotImplemented,
 			},
 		},
 		{
 			name: "Test Update /update/gauge/ Not Found",
 			args: args{
-				request: &http.Request{
-					Method: http.MethodPost,
-					URL:    &url.URL{Path: "/update/gauge/"},
-					Header: defaultHeader},
-				api: testAPI,
+				request: httptest.NewRequest(http.MethodPost, localHost+"/update/", updateBody("", "gauge", 0.0, 0)),
 			},
 			want: want{
-				contentType: "text/plain",
-				statusCode:  http.StatusNotFound,
+				statusCode: http.StatusNotFound,
 			},
 		},
 		{
 			name: "Test Update /update/counter/ Not Found",
 			args: args{
-				request: &http.Request{
-					Method: http.MethodPost,
-					URL:    &url.URL{Path: "/update/counter/"},
-					Header: defaultHeader},
-				api: testAPI,
+				request: httptest.NewRequest(http.MethodPost, localHost+"/update/", updateBody("", "counter", 0.0, 0)),
 			},
 			want: want{
-				contentType: "text/plain",
-				statusCode:  http.StatusNotFound,
+				statusCode: http.StatusNotFound,
 			},
 		},
 		{
-			name: "Test Update /update/gauge/testNameM/",
+			name: "Test Update /update/gauge/testNameGauge/",
 			args: args{
-				request: &http.Request{
-					Method: http.MethodPost,
-					URL:    &url.URL{Path: "/update/gauge/testNameM/"},
-					Header: defaultHeader},
-				api: NewAPI(service.NewService(memory.NewMemStorage())),
+				request: httptest.NewRequest(http.MethodPost, localHost+"/update/", updateBody("testNameGauge", "gauge", 0.0, 0)),
 			},
 			want: want{
-				contentType: "text/plain",
-				statusCode:  http.StatusNotFound,
+				statusCode: http.StatusOK,
 			},
 		},
 		{
-			name: "Test Update /update/counter/testNameM/",
+			name: "Test Update /update/counter/testNameCounter/",
 			args: args{
-				request: &http.Request{
-					Method: http.MethodPost,
-					URL:    &url.URL{Path: "/update/counter/testNameM/"},
-					Header: defaultHeader},
+				request: httptest.NewRequest(http.MethodPost, localHost+"/update/", updateBody("testNameCounter", "counter", 0.0, 0)),
 			},
 			want: want{
-				contentType: "text/plain",
-				statusCode:  http.StatusNotFound,
-			},
-		},
-		{
-			name: "Test Update /update/gauge/Alloc/- Bad Request (invalid value)",
-			args: args{
-				request: &http.Request{
-					Method: http.MethodPost,
-					URL:    &url.URL{Path: "/update/gauge/Alloc/-"},
-					Header: defaultHeader},
-			},
-			want: want{
-				contentType: "text/plain",
-				statusCode:  http.StatusBadRequest,
-			},
-		},
-		{
-			name: "Test Update /update/counter/PollCount/1.0 Bad Request (invalid value)",
-			args: args{
-				request: &http.Request{
-					Method: http.MethodPost,
-					URL:    &url.URL{Path: "/update/counter/PollCount/1.0"},
-					Header: defaultHeader},
-			},
-			want: want{
-				contentType: "text/plain",
-				statusCode:  http.StatusBadRequest,
+				statusCode: http.StatusOK,
 			},
 		},
 	}
@@ -174,38 +110,59 @@ func TestUpdateHandler(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			request := tt.args.request
 			w := httptest.NewRecorder()
-			h := http.HandlerFunc(checkTypeAndNameMetric("update", tt.args.api.updateHandler()))
+			h := http.HandlerFunc(testAPI.updateHandler)
 			h.ServeHTTP(w, request)
 			result := w.Result()
 			defer result.Body.Close()
 
 			require.Equal(t, tt.want.statusCode, result.StatusCode)
-			if result.StatusCode == http.StatusOK {
-				require.Equal(t, tt.want.contentType, result.Header.Get("Content-Type"))
-			}
 		})
 	}
 }
 
+func updateBody(MName, MType string, Value float64, Delta int64) *bytes.Buffer {
+	allocValue := Value
+	deltaValue := Delta
+	metricForBody := metric.Metrics{
+		ID:    MName,
+		MType: MType,
+		Delta: &deltaValue,
+		Value: &allocValue,
+	}
+	body, _ := json.Marshal(&metricForBody)
+	return bytes.NewBuffer(body)
+}
+
 func TestGetValueHandler(t *testing.T) {
+
+	localHost := "http://127.0.0.1:8080"
 
 	testAPI := NewAPI(service.NewService(memory.NewMemStorage()))
 
+	gaugeValue := 2.22
 	testAPIWithAllocMetric := NewAPI(service.NewService(memory.NewMemStorage()))
-	gaugeMetrics, _ := testAPIWithAllocMetric.service.MemStorage.Metrics.MetricsOfType("gauge")
-	gaugeMetrics.Store("Alloc", "2.222")
+	testAPIWithAllocMetric.service.MemStorage.Metrics.Store("Alloc", &metric.Metrics{
+		ID:    "Alloc",
+		MType: "gauge",
+		Delta: nil,
+		Value: &gaugeValue,
+	})
 
+	counterValue := int64(2)
 	testAPIWithCounterMetric := NewAPI(service.NewService(memory.NewMemStorage()))
-	counterMetrics, _ := testAPIWithCounterMetric.service.MemStorage.Metrics.MetricsOfType("counter")
-	counterMetrics.Store("PollCount", "7")
+	testAPIWithCounterMetric.service.MemStorage.Metrics.Store("PollCount", &metric.Metrics{
+		ID:    "PollCount",
+		MType: "counter",
+		Delta: &counterValue,
+		Value: nil,
+	})
 
 	type args struct {
 		request *http.Request
 		api     *api
 	}
 	type want struct {
-		contentType string
-		statusCode  int
+		statusCode int
 	}
 	tests := []struct {
 		name string
@@ -215,85 +172,61 @@ func TestGetValueHandler(t *testing.T) {
 		{
 			name: "Test Value Gauge OK",
 			args: args{
-				request: &http.Request{
-					Method: http.MethodGet,
-					URL:    &url.URL{Path: "/value/gauge/Alloc"},
-					Header: map[string][]string{"Content-Type": []string{"text/plain"}}},
-				api: testAPIWithAllocMetric,
+				request: httptest.NewRequest(http.MethodPost, localHost+"/value/", getBody("Alloc", "gauge")),
+				api:     testAPIWithAllocMetric,
 			},
 			want: want{
-				contentType: "text/plain",
-				statusCode:  http.StatusOK,
+				statusCode: http.StatusOK,
 			},
 		},
 		{
 			name: "Test Value Counter OK",
 			args: args{
-				request: &http.Request{
-					Method: http.MethodGet,
-					URL:    &url.URL{Path: "/value/counter/PollCount"},
-					Header: map[string][]string{"Content-Type": []string{"text/plain"}}},
-				api: testAPIWithCounterMetric,
+				request: httptest.NewRequest(http.MethodPost, localHost+"/value/", getBody("PollCount", "counter")),
+				api:     testAPIWithCounterMetric,
 			},
 			want: want{
-				contentType: "text/plain",
-				statusCode:  http.StatusOK,
+				statusCode: http.StatusOK,
 			},
 		},
 		{
 			name: "Test Value /value/ Not Found",
 			args: args{
-				request: &http.Request{
-					Method: http.MethodGet,
-					URL:    &url.URL{Path: "/value/"},
-					Header: map[string][]string{"Content-Type": []string{"text/plain"}}},
-				api: testAPI,
+				request: httptest.NewRequest(http.MethodPost, localHost+"/value/", getBody("", "")),
+				api:     testAPI,
 			},
 			want: want{
-				contentType: "text/plain",
-				statusCode:  http.StatusNotFound,
+				statusCode: http.StatusNotFound,
 			},
 		},
 		{
 			name: "Test Value /value/unknown/unknown - Not Implemented (invalid type)",
 			args: args{
-				request: &http.Request{
-					Method: http.MethodGet,
-					URL:    &url.URL{Path: "/value/unknown/unknown"},
-					Header: map[string][]string{"Content-Type": []string{"text/plain"}}},
-				api: testAPI,
+				request: httptest.NewRequest(http.MethodPost, localHost+"/value/", getBody("unknown", "unknown")),
+				api:     testAPI,
 			},
 			want: want{
-				contentType: "text/plain",
-				statusCode:  http.StatusNotImplemented,
+				statusCode: http.StatusNotImplemented,
 			},
 		},
 		{
 			name: "Test Value /value/gauge/unknown - Not Found (invalid name)",
 			args: args{
-				request: &http.Request{
-					Method: http.MethodGet,
-					URL:    &url.URL{Path: "/value/gauge/unknown"},
-					Header: map[string][]string{"Content-Type": []string{"text/plain"}}},
-				api: testAPI,
+				request: httptest.NewRequest(http.MethodPost, localHost+"/value/", getBody("unknown", "gauge")),
+				api:     testAPI,
 			},
 			want: want{
-				contentType: "text/plain",
-				statusCode:  http.StatusNotFound,
+				statusCode: http.StatusNotFound,
 			},
 		},
 		{
 			name: "Test Value /value/counter/unknown - Not Found (invalid name)",
 			args: args{
-				request: &http.Request{
-					Method: http.MethodGet,
-					URL:    &url.URL{Path: "/value/counter/unknown"},
-					Header: map[string][]string{"Content-Type": []string{"text/plain"}}},
-				api: testAPI,
+				request: httptest.NewRequest(http.MethodPost, localHost+"/value/", getBody("unknown", "counter")),
+				api:     testAPI,
 			},
 			want: want{
-				contentType: "text/plain",
-				statusCode:  http.StatusNotFound,
+				statusCode: http.StatusNotFound,
 			},
 		},
 	}
@@ -301,15 +234,21 @@ func TestGetValueHandler(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			request := tt.args.request
 			w := httptest.NewRecorder()
-			h := http.HandlerFunc(checkTypeAndNameMetric("value", tt.args.api.getValueHandler()))
+			h := http.HandlerFunc(tt.args.api.getValueHandler)
 			h.ServeHTTP(w, request)
 			result := w.Result()
 			defer result.Body.Close()
 
 			require.Equal(t, tt.want.statusCode, result.StatusCode)
-			if result.StatusCode == http.StatusOK {
-				require.Equal(t, tt.want.contentType, result.Header.Get("Content-Type"))
-			}
 		})
 	}
+}
+
+func getBody(MName, MType string) *bytes.Buffer {
+	metricForBody := metric.Metrics{
+		ID:    MName,
+		MType: MType,
+	}
+	body, _ := json.Marshal(&metricForBody)
+	return bytes.NewBuffer(body)
 }
