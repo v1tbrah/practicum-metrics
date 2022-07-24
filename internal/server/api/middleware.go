@@ -31,7 +31,7 @@ func checkTypeAndNameMetric(handler string, next http.HandlerFunc) http.HandlerF
 			http.Error(w, fmt.Sprintf("%s", ErrMetricNameNotSpecified), http.StatusNotFound)
 			return
 		}
-		if handler != "value" {
+		if handler == "update" {
 			if infoFromURL.valM == "" {
 				http.Error(w, fmt.Sprintf("%s", ErrMetricValueNotSpecified), http.StatusNotFound)
 				return

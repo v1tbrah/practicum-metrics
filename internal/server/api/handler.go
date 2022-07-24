@@ -78,6 +78,18 @@ func (a *api) updateJSONHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if metricFromRequest.MType == "gauge" {
+		if metricFromRequest.Value == nil {
+			http.Error(w, fmt.Sprintf("%s", ErrMetricValueNotSpecified), http.StatusNotFound)
+			return
+		}
+	} else if metricFromRequest.MType == "counter" {
+		if metricFromRequest.Delta == nil {
+			http.Error(w, fmt.Sprintf("%s", ErrMetricValueNotSpecified), http.StatusNotFound)
+			return
+		}
+	}
+
 	switch metricFromRequest.MType {
 	case "gauge":
 		a.updateGaugeHandler(&metricFromRequest, w, r)
