@@ -110,6 +110,7 @@ func (a *api) getValueJSONHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	resp, _ := json.Marshal(metricOnServ)
+	w.Header().Set("Content-Type", r.Header.Get("Content-Type"))
 	w.Write(resp)
 }
 
