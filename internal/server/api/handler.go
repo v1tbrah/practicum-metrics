@@ -62,7 +62,7 @@ func (a *api) getValueHandler() http.HandlerFunc {
 			http.Error(w, "metric not found", http.StatusNotFound)
 			return
 		}
-		metricValOnServ := metricOnServ.(metric.Metrics)
+		metricValOnServ := metricOnServ.(*metric.Metrics)
 		if metricFromRequest.MType == "gauge" {
 			w.Write([]byte(fmt.Sprintf("%v", *metricValOnServ.Value)))
 		} else if metricFromRequest.MType == "counter" {
