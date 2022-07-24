@@ -52,7 +52,7 @@ func (a *api) updateHandler() http.HandlerFunc {
 
 func (a *api) getValueHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		infoFromURL := newInfoUpdateURL(r.URL.Path)
+		infoFromURL := newInfoGetValueURL(r.URL.Path)
 		metricFromRequest := metric.Metrics{}
 		metricFromRequest.MType = infoFromURL.typeM
 		metricFromRequest.ID = infoFromURL.nameM
@@ -171,7 +171,7 @@ func (a *api) updateCounterHandler(newMetric *metric.Metrics, w http.ResponseWri
 		mForUpd = interfaceMForUpd.(*metric.Metrics)
 	}
 
-	*mForUpd.Delta = *newMetric.Delta
+	*mForUpd.Delta += *newMetric.Delta
 
 	a.service.MemStorage.Metrics.Store(mForUpd.ID, mForUpd)
 
