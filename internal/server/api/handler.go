@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"sort"
+	"strconv"
 	"sync"
 
 	"github.com/v1tbrah/metricsAndAlerting/internal/server/repo/metric"
@@ -20,7 +21,53 @@ var (
 	ErrMetricNameNotSpecified   = errors.New("metric name not specified")
 )
 
-func (a *api) updateHandler(w http.ResponseWriter, r *http.Request) {
+func (a *api) updateHandler() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		infoFromURL := newInfoUpdateURL(r.URL.Path)
+		metricFromRequest := metric.Metrics{}
+		metricFromRequest.MType = infoFromURL.typeM
+		metricFromRequest.ID = infoFromURL.nameM
+
+		switch metricFromRequest.MType {
+		case "gauge":
+			value, err := strconv.ParseFloat(infoFromURL.valM, 64)
+			if err != nil {
+				http.Error(w, fmt.Sprintf("%s", err), http.StatusBadRequest)
+				return
+			}
+			metricFromRequest.Value = &value
+			a.updateGaugeHandler(&metricFromRequest, w, r)
+		case "counter":
+			value, err := strconv.Atoi(infoFromURL.valM)
+			if err != nil {
+				http.Error(w, fmt.Sprintf("%s", err), http.StatusBadRequest)
+				return
+			}
+			valueInt64 := int64(value)
+			metricFromRequest.Delta = &valueInt64
+			a.updateCounterHandler(&metricFromRequest, w, r)
+		}
+	}
+}
+
+func (a *api) getValueHandler() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		infoFromURL := newInfoUpdateURL(r.URL.Path)
+		metricFromRequest := metric.Metrics{}
+		metricFromRequest.MType = infoFromURL.typeM
+		metricFromRequest.ID = infoFromURL.nameM
+
+		metricOnServ, ok := a.service.MemStorage.Metrics.Load(metricFromRequest.ID)
+		if !ok {
+			http.Error(w, "metric not found", http.StatusNotFound)
+			return
+		}
+		resp, _ := json.Marshal(metricOnServ)
+		w.Write(resp)
+	}
+}
+
+func (a *api) updateJSONHandler(w http.ResponseWriter, r *http.Request) {
 
 	metricFromRequest := metric.Metrics{}
 	if !tryFillMetricFromRequest(&metricFromRequest, w, r) {
@@ -35,7 +82,7 @@ func (a *api) updateHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (a *api) getValueHandler(w http.ResponseWriter, r *http.Request) {
+func (a *api) getValueJSONHandler(w http.ResponseWriter, r *http.Request) {
 	metricFromRequest := metric.Metrics{}
 	if !tryFillMetricFromRequest(&metricFromRequest, w, r) {
 		return

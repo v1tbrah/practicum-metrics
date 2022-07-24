@@ -110,7 +110,7 @@ func TestUpdateHandler(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			request := tt.args.request
 			w := httptest.NewRecorder()
-			h := http.HandlerFunc(testAPI.updateHandler)
+			h := http.HandlerFunc(testAPI.updateJSONHandler)
 			h.ServeHTTP(w, request)
 			result := w.Result()
 			defer result.Body.Close()
@@ -234,7 +234,7 @@ func TestGetValueHandler(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			request := tt.args.request
 			w := httptest.NewRecorder()
-			h := http.HandlerFunc(tt.args.api.getValueHandler)
+			h := http.HandlerFunc(tt.args.api.getValueJSONHandler)
 			h.ServeHTTP(w, request)
 			result := w.Result()
 			defer result.Body.Close()

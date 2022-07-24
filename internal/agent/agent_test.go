@@ -30,7 +30,7 @@ var metricOnServer = metric.Metrics{
 
 func mockRouter() chi.Router {
 	r := chi.NewRouter()
-	r.Use(middleware.AllowContentType(testAgent.options.contentType))
+	r.Use(middleware.AllowContentType(testAgent.options.contentTypeJSON))
 
 	r.Post("/update/", mockUpdateHandler)
 	r.Post("/value/", mockValueHandler)
@@ -98,7 +98,7 @@ func Test_agent_sendMetric(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			resp, err := testAgent.sendMetric(tt.input.metric)
+			resp, err := testAgent.sendMetricJSON(tt.input.metric)
 			require.Nil(t, err)
 			assert.Equal(t, "application/json", resp.Header().Get("Content-Type"))
 			resMetric := metric.Metrics{}
@@ -139,7 +139,7 @@ func Test_agent_getMetric(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			resp, err := testAgent.getMetric(tt.input.metricOnClient)
+			resp, err := testAgent.getMetricJSON(tt.input.metricOnClient)
 			require.Nil(t, err)
 			assert.Equal(t, "application/json", resp.Header().Get("Content-Type"))
 			resMetric := metric.Metrics{}
