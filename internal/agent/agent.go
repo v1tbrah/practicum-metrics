@@ -69,7 +69,7 @@ func (a *agent) Run() {
 		for {
 			<-reportTime.C
 			mutex.Lock()
-			if err := a.sendAllMetrics(); err != nil {
+			if err := a.sendAllMetricsJSON(); err != nil {
 				log.Fatalln(err)
 			}
 			log.Println("AllMetrics sent successfully.")
