@@ -69,9 +69,22 @@ func (a *agent) Run() {
 			<-reportTime.C
 			mutex.Lock()
 			if err := a.sendAllMetricsJSON(); err != nil {
-				log.Fatalln(err)
+				log.Println(err)
 			}
 			log.Println("AllMetrics sent successfully.")
+			mutex.Unlock()
+		}
+	}()
+
+	go func() {
+		updateTime := time.NewTicker(time.Second * 15)
+		for {
+			<-updateTime.C
+			mutex.Lock()
+			if err := a.getAllMetricJSON(); err != nil {
+				log.Println(err)
+			}
+			log.Println("AllMetrics get successfully.")
 			mutex.Unlock()
 		}
 	}()
@@ -117,6 +130,17 @@ func (a *agent) sendMetricJSON(metric metric.Metrics) (*resty.Response, error) {
 		Post(a.options.updateTemplateJSONURL)
 
 	return resp, err
+}
+
+func (a *agent) getAllMetricJSON() error {
+
+	for _, currMetric := range *a.memory.Metrics {
+		if _, err := a.getMetricJSON(currMetric); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (a *agent) getMetricJSON(metric metric.Metrics) (*resty.Response, error) {
