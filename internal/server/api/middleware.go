@@ -4,15 +4,10 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-
-	"github.com/v1tbrah/metricsAndAlerting/internal/server/repo/metric"
 )
 
 var (
-	ErrMetricTypeNotSpecified   = errors.New("metric type not specified")
-	ErrMetricTypeNotImplemented = errors.New("metric type not implemented")
-	ErrMetricNameNotSpecified   = errors.New("metric name not specified")
-	ErrMetricValueNotSpecified  = errors.New("metric value not specified")
+	ErrMetricValueNotSpecified = errors.New("metric value not specified")
 )
 
 func checkTypeAndNameMetric(handler string, next http.HandlerFunc) http.HandlerFunc {
@@ -28,7 +23,7 @@ func checkTypeAndNameMetric(handler string, next http.HandlerFunc) http.HandlerF
 			http.Error(w, fmt.Sprintf("%s", ErrMetricTypeNotSpecified), http.StatusNotFound)
 			return
 		}
-		if !metric.TypeIsValid(infoFromURL.typeM) {
+		if infoFromURL.typeM != "gauge" && infoFromURL.typeM != "counter" {
 			http.Error(w, fmt.Sprintf("%s", ErrMetricTypeNotImplemented), http.StatusNotImplemented)
 			return
 		}
@@ -36,7 +31,7 @@ func checkTypeAndNameMetric(handler string, next http.HandlerFunc) http.HandlerF
 			http.Error(w, fmt.Sprintf("%s", ErrMetricNameNotSpecified), http.StatusNotFound)
 			return
 		}
-		if handler != "value" {
+		if handler == "update" {
 			if infoFromURL.valM == "" {
 				http.Error(w, fmt.Sprintf("%s", ErrMetricValueNotSpecified), http.StatusNotFound)
 				return

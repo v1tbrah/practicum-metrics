@@ -36,6 +36,8 @@ func (a *api) newRouter() chi.Router {
 	r.Use(middleware.Logger)
 
 	r.Get("/", a.getPageHandler())
+	r.Post("/update/", a.updateJSONHandler)
+	r.Post("/value/", a.getValueJSONHandler)
 	r.Post("/update/{type}/{metric}/{val}", checkTypeAndNameMetric("update", a.updateHandler()))
 	r.Get("/value/{type}/{metric}", checkTypeAndNameMetric("value", a.getValueHandler()))
 

@@ -1,13 +1,11 @@
 package memory
 
 import (
-	"sync"
-
-	"github.com/v1tbrah/metricsAndAlerting/internal/server/repo/metric"
+	"github.com/v1tbrah/metricsAndAlerting/internal/agent/metric"
 )
 
 type MemStorage struct {
-	Metrics *sync.Map
+	Metrics *metric.AllMetrics
 }
 
 // Creates an MemStorage.

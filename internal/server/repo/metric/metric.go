@@ -1,42 +1,26 @@
 package metric
 
 import (
-	"errors"
 	"sync"
 )
 
-const ErrInvalidType = "invalid type of metric"
-
-type Metrics struct {
-	gauge   *sync.Map
-	counter *sync.Map
-}
+const ErrInvalidType = "invalid type of metrics"
 
 // Creates a Metrics.
-func NewMetrics() *Metrics {
-	return &Metrics{gauge: &sync.Map{}, counter: &sync.Map{}}
+func NewMetrics() *sync.Map {
+	return &sync.Map{}
 }
 
-// Returns metrics by type.
-func (m *Metrics) MetricsOfType(typeM string) (*sync.Map, error) {
-	switch typeM {
-	case "gauge":
-		return m.gauge, nil
-	case "counter":
-		return m.counter, nil
-	default:
-		return nil, errors.New(ErrInvalidType)
-	}
+type Metrics struct {
+	ID    string   `json:"id"`
+	MType string   `json:"type"`
+	Delta *int64   `json:"delta,omitempty"`
+	Value *float64 `json:"value,omitempty"`
 }
 
-// Checks if the metric type exists.
-func TypeIsValid(checked string) bool {
-	switch checked {
-	case "gauge":
+func (m *Metrics) TypeIsValid() bool {
+	if m.MType == "gauge" || m.MType == "counter" {
 		return true
-	case "counter":
-		return true
-	default:
-		return false
 	}
+	return false
 }

@@ -1,92 +1,108 @@
 package metric
 
 import (
-	"errors"
 	"math/rand"
+	"reflect"
 	"runtime"
 	"time"
 )
 
-type (
-	gauge   = float64
-	counter = int64
-)
-
-var ErrIsNotAMetric = errors.New("it's not a metric")
-
 type Metrics struct {
-	Alloc         gauge
-	BuckHashSys   gauge
-	Frees         gauge
-	GCCPUFraction gauge
-	GCSys         gauge
-	HeapAlloc     gauge
-	HeapIdle      gauge
-	HeapInuse     gauge
-	HeapObjects   gauge
-	HeapReleased  gauge
-	HeapSys       gauge
-	LastGC        gauge
-	Lookups       gauge
-	MCacheInuse   gauge
-	MCacheSys     gauge
-	MSpanInuse    gauge
-	MSpanSys      gauge
-	Mallocs       gauge
-	NextGC        gauge
-	NumForcedGC   gauge
-	NumGC         gauge
-	OtherSys      gauge
-	PauseTotalNs  gauge
-	StackInuse    gauge
-	StackSys      gauge
-	Sys           gauge
-	TotalAlloc    gauge
-	PollCount     counter
-	RandomValue   gauge
+	ID    string   `json:"id"`
+	MType string   `json:"type"`
+	Delta *int64   `json:"delta,omitempty"`
+	Value *float64 `json:"value,omitempty"`
 }
 
-// Creates a Metrics.
-func New() *Metrics {
-	return &Metrics{}
+type AllMetrics map[string]Metrics
+
+// Creates an AllMetrics.
+func NewMetrics() *AllMetrics {
+	return &AllMetrics{
+		"Alloc":         NewMetric("gauge", "Alloc"),
+		"BuckHashSys":   NewMetric("gauge", "BuckHashSys"),
+		"Frees":         NewMetric("gauge", "Frees"),
+		"GCCPUFraction": NewMetric("gauge", "GCCPUFraction"),
+		"GCSys":         NewMetric("gauge", "GCSys"),
+		"HeapAlloc":     NewMetric("gauge", "HeapAlloc"),
+		"HeapIdle":      NewMetric("gauge", "HeapIdle"),
+		"HeapInuse":     NewMetric("gauge", "HeapInuse"),
+		"HeapObjects":   NewMetric("gauge", "HeapObjects"),
+		"HeapReleased":  NewMetric("gauge", "HeapReleased"),
+		"HeapSys":       NewMetric("gauge", "HeapSys"),
+		"LastGC":        NewMetric("gauge", "LastGC"),
+		"Lookups":       NewMetric("gauge", "Lookups"),
+		"MCacheInuse":   NewMetric("gauge", "MCacheInuse"),
+		"MCacheSys":     NewMetric("gauge", "MCacheSys"),
+		"MSpanInuse":    NewMetric("gauge", "MSpanInuse"),
+		"MSpanSys":      NewMetric("gauge", "MSpanSys"),
+		"Mallocs":       NewMetric("gauge", "Mallocs"),
+		"NextGC":        NewMetric("gauge", "NextGC"),
+		"NumForcedGC":   NewMetric("gauge", "NumForcedGC"),
+		"NumGC":         NewMetric("gauge", "NumGC"),
+		"OtherSys":      NewMetric("gauge", "OtherSys"),
+		"PauseTotalNs":  NewMetric("gauge", "PauseTotalNs"),
+		"StackInuse":    NewMetric("gauge", "StackInuse"),
+		"StackSys":      NewMetric("gauge", "StackSys"),
+		"Sys":           NewMetric("gauge", "Sys"),
+		"TotalAlloc":    NewMetric("gauge", "TotalAlloc"),
+		"PollCount":     NewMetric("counter", "PollCount"),
+		"RandomValue":   NewMetric("gauge", "RandomValue"),
+	}
 }
 
-// Updates metrics. Gauge metrics are read from runtime.ReadMemStats.
-func (m *Metrics) Update() {
-	m.updateGauge()
-	m.PollCount++
-}
+// Updates all metrics. Gauge metrics are read from runtime.ReadMemStats.
+func (m *AllMetrics) Update() {
+	mForUpd := *m
 
-func (m *Metrics) updateGauge() {
 	stats := runtime.MemStats{}
 	runtime.ReadMemStats(&stats)
+	rStats := reflect.ValueOf(stats)
 
-	m.Alloc = gauge(stats.Alloc)
-	m.BuckHashSys = gauge(stats.BuckHashSys)
-	m.Frees = gauge(stats.Frees)
-	m.GCCPUFraction = stats.GCCPUFraction
-	m.GCSys = gauge(stats.GCSys)
-	m.HeapAlloc = gauge(stats.HeapAlloc)
-	m.HeapIdle = gauge(stats.HeapIdle)
-	m.HeapInuse = gauge(stats.HeapInuse)
-	m.HeapObjects = gauge(stats.HeapObjects)
-	m.HeapReleased = gauge(stats.HeapReleased)
-	m.HeapSys = gauge(stats.HeapSys)
-	m.LastGC = gauge(stats.LastGC)
-	m.Lookups = gauge(stats.Lookups)
-	m.MCacheInuse = gauge(stats.MCacheInuse)
-	m.MSpanSys = gauge(stats.MSpanSys)
-	m.MSpanInuse = gauge(stats.MSpanInuse)
-	m.Mallocs = gauge(stats.Mallocs)
-	m.NextGC = gauge(stats.NextGC)
-	m.NumForcedGC = gauge(stats.NumForcedGC)
-	m.NumGC = gauge(stats.NumGC)
-	m.OtherSys = gauge(stats.OtherSys)
-	m.PauseTotalNs = gauge(stats.PauseTotalNs)
-	m.StackInuse = gauge(stats.StackInuse)
-	m.StackSys = gauge(stats.StackSys)
-	m.Sys = gauge(stats.Sys)
+	for name, metric := range mForUpd {
+		if metric.MType != "gauge" {
+			continue
+		}
+		rStatValue := rStats.FieldByName(name)
+		if rStatValue.Kind() == reflect.Invalid || !rStatValue.CanInterface() {
+			continue
+		}
+		var vForUpd float64
+		if rStatValue.CanUint() {
+			statValue, ok := rStatValue.Interface().(uint64)
+			if !ok {
+				statValue, _ := rStatValue.Interface().(uint32)
+				vForUpd = float64(statValue)
+			}
+			vForUpd = float64(statValue)
+		} else if rStatValue.CanFloat() {
+			vForUpd = rStatValue.Interface().(float64)
+		}
+		metric.Value = &vForUpd
+		mForUpd[name] = metric
+	}
 
+	mRandomValue := mForUpd["RandomValue"]
 	rand.Seed(time.Now().UnixNano())
-	m.RandomValue = rand.Float64()
+	newRandomValue := rand.Float64()
+	*mRandomValue.Value = newRandomValue
+
+	mPollCount := mForUpd["PollCount"]
+	*mPollCount.Delta++
+
+}
+
+func NewMetric(MType, ID string) Metrics {
+	newMetric := Metrics{
+		ID:    ID,
+		MType: MType,
+	}
+	if MType == "gauge" {
+		var val float64
+		newMetric.Value = &val
+	} else if MType == "counter" {
+		var delta int64
+		newMetric.Delta = &delta
+	}
+	return newMetric
 }
