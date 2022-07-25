@@ -76,19 +76,6 @@ func (a *agent) Run() {
 		}
 	}()
 
-	//go func() {
-	//	updateTime := time.NewTicker(time.Second * 15)
-	//	for {
-	//		<-updateTime.C
-	//		mutex.Lock()
-	//		if err := a.getAllMetricJSON(); err != nil {
-	//			log.Println(err)
-	//		}
-	//		log.Println("AllMetrics get successfully.")
-	//		mutex.Unlock()
-	//	}
-	//}()
-
 	<-shutdown
 	os.Exit(0)
 
