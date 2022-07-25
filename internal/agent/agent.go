@@ -2,7 +2,6 @@ package agent
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"os"
 	"os/signal"
@@ -88,56 +87,10 @@ func newDefaultOptions() *options {
 		pollInterval:          2 * time.Second,
 		reportInterval:        10 * time.Second,
 		srvAddr:               srvAddr,
-		updateTemplateURL:     "http://" + srvAddr + "/update/{typeM}/{nameM}/{valM}",
-		getTemplateURL:        "http://" + srvAddr + "/value/{typeM}/{nameM}",
-		contentTypeTextPlain:  "text/plain",
 		updateTemplateJSONURL: "http://" + srvAddr + "/update/",
 		getTemplateJSONURL:    "http://" + srvAddr + "/value/",
 		contentTypeJSON:       "application/json",
 	}
-}
-
-func (a *agent) sendAllMetrics() error {
-
-	for _, metric := range *a.memory.Metrics {
-		if _, err := a.sendMetric(metric); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (a *agent) sendMetric(metric metric.Metrics) (*resty.Response, error) {
-
-	var valM string
-	if metric.MType == "gauge" {
-		valM = fmt.Sprintf("%f", *metric.Value)
-	} else {
-		valM = fmt.Sprintf("%v", *metric.Delta)
-	}
-
-	resp, err := a.client.NewRequest().
-		SetHeader("Content-Type", a.options.contentTypeTextPlain).
-		SetPathParams(map[string]string{
-			"typeM": metric.MType,
-			"nameM": metric.ID,
-			"valM":  valM}).
-		Post(a.options.updateTemplateURL)
-
-	return resp, err
-}
-
-func (a *agent) getMetric(metric metric.Metrics) (*resty.Response, error) {
-
-	resp, err := a.client.NewRequest().
-		SetHeader("Content-Type", a.options.contentTypeJSON).
-		SetPathParams(map[string]string{
-			"typeM": metric.MType,
-			"nameM": metric.ID}).
-		Get(a.options.getTemplateURL)
-
-	return resp, err
 }
 
 func (a *agent) sendAllMetricsJSON() error {
