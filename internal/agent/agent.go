@@ -121,18 +121,18 @@ func (a *agent) sendMetricJSON(metric metric.Metrics) (*resty.Response, error) {
 
 func (a *agent) getMetricJSON(metric metric.Metrics) (*resty.Response, error) {
 
-	metric.Delta = nil
-	metric.Value = nil
+	//metric.Delta = nil
+	//metric.Value = nil
+	//
+	//body, err := json.Marshal(metric)
+	//if err != nil {
+	//	return nil, err
+	//}
+	//
+	//resp, err := a.client.NewRequest().
+	//	SetHeader("Content-Type", a.options.contentTypeJSON).
+	//	SetBody(body).
+	//	Post(a.options.getTemplateJSONURL)
 
-	body, err := json.Marshal(metric)
-	if err != nil {
-		return nil, err
-	}
-
-	resp, err := a.client.NewRequest().
-		SetHeader("Content-Type", a.options.contentTypeJSON).
-		SetBody(body).
-		Post(a.options.getTemplateJSONURL)
-
-	return resp, err
+	return nil, nil
 }

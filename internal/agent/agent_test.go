@@ -54,6 +54,7 @@ func mockValueHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	metric.Value = metricOnServer.Value
 	metric.Delta = metricOnServer.Delta
+
 	resp, err := json.Marshal(metric)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -138,7 +139,6 @@ func Test_agent_getMetric(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
 			resp, err := testAgent.getMetricJSON(tt.input.metricOnClient)
 			require.Nil(t, err)
 			assert.Equal(t, "application/json", resp.Header().Get("Content-Type"))

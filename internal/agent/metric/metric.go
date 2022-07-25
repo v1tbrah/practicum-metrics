@@ -19,35 +19,35 @@ type AllMetrics map[string]Metrics
 // Creates an AllMetrics.
 func NewMetrics() *AllMetrics {
 	return &AllMetrics{
-		"Alloc":         NewAlloc(),
-		"BuckHashSys":   NewBuckHashSys(),
-		"Frees":         NewFrees(),
-		"GCCPUFraction": NewGCCPUFraction(),
-		"GCSys":         NewGCSys(),
-		"HeapAlloc":     NewHeapAlloc(),
-		"HeapIdle":      NewHeapIdle(),
-		"HeapInuse":     NewHeapInuse(),
-		"HeapObjects":   NewHeapObjects(),
-		"HeapReleased":  NewHeapReleased(),
-		"HeapSys":       NewHeapSys(),
-		"LastGC":        NewLastGC(),
-		"Lookups":       NewLookups(),
-		"MCacheInuse":   NewMCacheInuse(),
-		"MCacheSys":     NewMCacheSys(),
-		"MSpanInuse":    NewMSpanInuse(),
-		"MSpanSys":      NewMSpanSys(),
-		"Mallocs":       NewMallocs(),
-		"NextGC":        NewNextGC(),
-		"NumForcedGC":   NewNumForcedGC(),
-		"NumGC":         NewNumGC(),
-		"OtherSys":      NewOtherSys(),
-		"PauseTotalNs":  NewPauseTotalNs(),
-		"StackInuse":    NewStackInuse(),
-		"StackSys":      NewStackSys(),
-		"Sys":           NewSys(),
-		"TotalAlloc":    NewTotalAlloc(),
-		"PollCount":     NewPollCount(),
-		"RandomValue":   NewRandomValue(),
+		"Alloc":         NewMetric("gauge", "Alloc"),
+		"BuckHashSys":   NewMetric("gauge", "BuckHashSys"),
+		"Frees":         NewMetric("gauge", "Frees"),
+		"GCCPUFraction": NewMetric("gauge", "GCCPUFraction"),
+		"GCSys":         NewMetric("gauge", "GCSys"),
+		"HeapAlloc":     NewMetric("gauge", "HeapAlloc"),
+		"HeapIdle":      NewMetric("gauge", "HeapIdle"),
+		"HeapInuse":     NewMetric("gauge", "HeapInuse"),
+		"HeapObjects":   NewMetric("gauge", "HeapObjects"),
+		"HeapReleased":  NewMetric("gauge", "HeapReleased"),
+		"HeapSys":       NewMetric("gauge", "HeapSys"),
+		"LastGC":        NewMetric("gauge", "LastGC"),
+		"Lookups":       NewMetric("gauge", "Lookups"),
+		"MCacheInuse":   NewMetric("gauge", "MCacheInuse"),
+		"MCacheSys":     NewMetric("gauge", "MCacheSys"),
+		"MSpanInuse":    NewMetric("gauge", "MSpanInuse"),
+		"MSpanSys":      NewMetric("gauge", "MSpanSys"),
+		"Mallocs":       NewMetric("gauge", "Mallocs"),
+		"NextGC":        NewMetric("gauge", "NextGC"),
+		"NumForcedGC":   NewMetric("gauge", "NumForcedGC"),
+		"NumGC":         NewMetric("gauge", "NumGC"),
+		"OtherSys":      NewMetric("gauge", "OtherSys"),
+		"PauseTotalNs":  NewMetric("gauge", "PauseTotalNs"),
+		"StackInuse":    NewMetric("gauge", "StackInuse"),
+		"StackSys":      NewMetric("gauge", "StackSys"),
+		"Sys":           NewMetric("gauge", "Sys"),
+		"TotalAlloc":    NewMetric("gauge", "TotalAlloc"),
+		"PollCount":     NewMetric("counter", "PollCount"),
+		"RandomValue":   NewMetric("gauge", "RandomValue"),
 	}
 }
 
@@ -92,292 +92,17 @@ func (m *AllMetrics) Update() {
 
 }
 
-func NewAlloc() Metrics {
-	var value float64
-	return Metrics{
-		ID:    "Alloc",
-		MType: "gauge",
-		Delta: nil,
-		Value: &value,
+func NewMetric(MType, ID string) Metrics {
+	newMetric := Metrics{
+		ID:    ID,
+		MType: MType,
 	}
-}
-
-func NewBuckHashSys() Metrics {
-	var value float64
-	return Metrics{
-		ID:    "BuckHashSys",
-		MType: "gauge",
-		Delta: nil,
-		Value: &value,
+	if MType == "gauge" {
+		var val float64
+		newMetric.Value = &val
+	} else if MType == "counter" {
+		var delta int64
+		newMetric.Delta = &delta
 	}
-}
-
-func NewFrees() Metrics {
-	var value float64
-	return Metrics{
-		ID:    "Frees",
-		MType: "gauge",
-		Delta: nil,
-		Value: &value,
-	}
-}
-
-func NewGCCPUFraction() Metrics {
-	var value float64
-	return Metrics{
-		ID:    "GCCPUFraction",
-		MType: "gauge",
-		Delta: nil,
-		Value: &value,
-	}
-}
-
-func NewGCSys() Metrics {
-	var value float64
-	return Metrics{
-		ID:    "GCSys",
-		MType: "gauge",
-		Delta: nil,
-		Value: &value,
-	}
-}
-
-func NewHeapAlloc() Metrics {
-	var value float64
-	return Metrics{
-		ID:    "HeapAlloc",
-		MType: "gauge",
-		Delta: nil,
-		Value: &value,
-	}
-}
-
-func NewHeapIdle() Metrics {
-	var value float64
-	return Metrics{
-		ID:    "HeapIdle",
-		MType: "gauge",
-		Delta: nil,
-		Value: &value,
-	}
-}
-
-func NewHeapInuse() Metrics {
-	var value float64
-	return Metrics{
-		ID:    "HeapInuse",
-		MType: "gauge",
-		Delta: nil,
-		Value: &value,
-	}
-}
-
-func NewHeapObjects() Metrics {
-	var value float64
-	return Metrics{
-		ID:    "HeapObjects",
-		MType: "gauge",
-		Delta: nil,
-		Value: &value,
-	}
-}
-
-func NewHeapReleased() Metrics {
-	var value float64
-	return Metrics{
-		ID:    "HeapReleased",
-		MType: "gauge",
-		Delta: nil,
-		Value: &value,
-	}
-}
-
-func NewHeapSys() Metrics {
-	var value float64
-	return Metrics{
-		ID:    "HeapSys",
-		MType: "gauge",
-		Delta: nil,
-		Value: &value,
-	}
-}
-
-func NewLastGC() Metrics {
-	var value float64
-	return Metrics{
-		ID:    "LastGC",
-		MType: "gauge",
-		Delta: nil,
-		Value: &value,
-	}
-}
-
-func NewLookups() Metrics {
-	var value float64
-	return Metrics{
-		ID:    "Lookups",
-		MType: "gauge",
-		Delta: nil,
-		Value: &value,
-	}
-}
-
-func NewMCacheInuse() Metrics {
-	var value float64
-	return Metrics{
-		ID:    "MCacheInuse",
-		MType: "gauge",
-		Delta: nil,
-		Value: &value,
-	}
-}
-
-func NewMCacheSys() Metrics {
-	var value float64
-	return Metrics{
-		ID:    "MCacheSys",
-		MType: "gauge",
-		Delta: nil,
-		Value: &value,
-	}
-}
-
-func NewMSpanInuse() Metrics {
-	var value float64
-	return Metrics{
-		ID:    "MSpanInuse",
-		MType: "gauge",
-		Delta: nil,
-		Value: &value,
-	}
-}
-
-func NewMSpanSys() Metrics {
-	var value float64
-	return Metrics{
-		ID:    "MSpanSys",
-		MType: "gauge",
-		Delta: nil,
-		Value: &value,
-	}
-}
-
-func NewMallocs() Metrics {
-	var value float64
-	return Metrics{
-		ID:    "Mallocs",
-		MType: "gauge",
-		Delta: nil,
-		Value: &value,
-	}
-}
-
-func NewNextGC() Metrics {
-	var value float64
-	return Metrics{
-		ID:    "NextGC",
-		MType: "gauge",
-		Delta: nil,
-		Value: &value,
-	}
-}
-
-func NewNumForcedGC() Metrics {
-	var value float64
-	return Metrics{
-		ID:    "NumForcedGC",
-		MType: "gauge",
-		Delta: nil,
-		Value: &value,
-	}
-}
-
-func NewNumGC() Metrics {
-	var value float64
-	return Metrics{
-		ID:    "NumGC",
-		MType: "gauge",
-		Delta: nil,
-		Value: &value,
-	}
-}
-
-func NewOtherSys() Metrics {
-	var value float64
-	return Metrics{
-		ID:    "OtherSys",
-		MType: "gauge",
-		Delta: nil,
-		Value: &value,
-	}
-}
-
-func NewPauseTotalNs() Metrics {
-	var value float64
-	return Metrics{
-		ID:    "PauseTotalNs",
-		MType: "gauge",
-		Delta: nil,
-		Value: &value,
-	}
-}
-
-func NewStackInuse() Metrics {
-	var value float64
-	return Metrics{
-		ID:    "StackInuse",
-		MType: "gauge",
-		Delta: nil,
-		Value: &value,
-	}
-}
-
-func NewStackSys() Metrics {
-	var value float64
-	return Metrics{
-		ID:    "StackSys",
-		MType: "gauge",
-		Delta: nil,
-		Value: &value,
-	}
-}
-
-func NewSys() Metrics {
-	var value float64
-	return Metrics{
-		ID:    "Sys",
-		MType: "gauge",
-		Delta: nil,
-		Value: &value,
-	}
-}
-
-func NewTotalAlloc() Metrics {
-	var value float64
-	return Metrics{
-		ID:    "TotalAlloc",
-		MType: "gauge",
-		Delta: nil,
-		Value: &value,
-	}
-}
-
-func NewPollCount() Metrics {
-	var value int64
-	return Metrics{
-		ID:    "PollCount",
-		MType: "counter",
-		Delta: &value,
-		Value: nil,
-	}
-}
-
-func NewRandomValue() Metrics {
-	var value float64
-	return Metrics{
-		ID:    "RandomValue",
-		MType: "gauge",
-		Delta: nil,
-		Value: &value,
-	}
+	return newMetric
 }
