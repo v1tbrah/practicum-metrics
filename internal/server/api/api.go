@@ -1,15 +1,17 @@
 package api
 
 import (
-	"net/http"
-
+	"github.com/caarlos0/env/v6"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-
 	"github.com/v1tbrah/metricsAndAlerting/internal/server/service"
+	"log"
+	"net/http"
 )
 
-const addr = "127.0.0.1:8080"
+type options struct {
+	Addr string `env:"ADDRESS" envDefault:"127.0.0.1:8080"`
+}
 
 type api struct {
 	server  *http.Server
@@ -18,11 +20,24 @@ type api struct {
 
 // Creates the API.
 func NewAPI(service *service.Service) *api {
+	server := &http.Server{}
+	options := newDefaultOptions()
+	err := env.Parse(options)
+	if err != nil {
+		log.Println(err)
+	}
+	server.Addr = options.Addr
+
 	newAPI := &api{
-		server:  &http.Server{Addr: addr},
+		server:  server,
 		service: service}
-	newAPI.server.Handler = newAPI.newRouter()
+
+	server.Handler = newAPI.newRouter()
 	return newAPI
+}
+
+func newDefaultOptions() *options {
+	return &options{Addr: "127.0.0.1:8080"}
 }
 
 //The API starts.
