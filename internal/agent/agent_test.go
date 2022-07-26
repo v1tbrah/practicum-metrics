@@ -30,7 +30,7 @@ var metricOnServer = metric.Metrics{
 
 func mockRouter() chi.Router {
 	r := chi.NewRouter()
-	r.Use(middleware.AllowContentType(testAgent.options.contentTypeJSON))
+	r.Use(middleware.AllowContentType("application/json"))
 
 	r.Post("/update/", mockUpdateHandler)
 	r.Post("/value/", mockValueHandler)
