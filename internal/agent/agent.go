@@ -2,7 +2,7 @@ package agent
 
 import (
 	"encoding/json"
-	"github.com/caarlos0/env/v6"
+	
 	"log"
 	"os"
 	"os/signal"
@@ -10,6 +10,7 @@ import (
 	"syscall"
 	"time"
 
+  "github.com/caarlos0/env/v6"
 	"github.com/go-resty/resty/v2"
 
 	"github.com/v1tbrah/metricsAndAlerting/internal/agent/memory"
@@ -40,7 +41,6 @@ func NewAgent() *agent {
 		client:  resty.New(),
 		options: newDefaultOptions(),
 		memory:  memory.NewMemStorage()}
-
 	err := env.Parse(agent.options)
 	if err != nil {
 		log.Println(err)
@@ -127,6 +127,7 @@ func (a *agent) sendMetricJSON(metric metric.Metrics) (*resty.Response, error) {
 
 	return resp, err
 }
+
 
 func (a *agent) getAllMetricJSON() error {
 
