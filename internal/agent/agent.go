@@ -2,6 +2,7 @@ package agent
 
 import (
 	"encoding/json"
+	"github.com/caarlos0/env/v6"
 	"log"
 	"os"
 	"os/signal"
@@ -22,9 +23,9 @@ type agent struct {
 }
 
 type options struct {
-	pollInterval          time.Duration
-	reportInterval        time.Duration
-	srvAddr               string
+	PollInterval          time.Duration `env:"POLL_INTERVAL" envDefault:"2s"`
+	ReportInterval        time.Duration `env:"REPORT_INTERVAL" envDefault:"10s"`
+	SrvAddr               string        `env:"ADDRESS" envDefault:"127.0.0.1:8080"`
 	updateTemplateURL     string
 	getTemplateURL        string
 	contentTypeTextPlain  string
@@ -33,15 +34,21 @@ type options struct {
 	contentTypeJSON       string
 }
 
-// Creates the agent instance with default settings.
+// NewAgent with default settings.
 func NewAgent() *agent {
-	return &agent{
+	agent := agent{
 		client:  resty.New(),
 		options: newDefaultOptions(),
 		memory:  memory.NewMemStorage()}
+
+	err := env.Parse(agent.options)
+	if err != nil {
+		log.Println(err)
+	}
+	return &agent
 }
 
-//The agent starts updating the metrics once per pollInterval and sends them to the server once per reportInterval.
+//Run agent updating the metrics once per pollInterval and sends them to the server once per reportInterval.
 //For more about pollInterval and reportInterval, see agent.options.
 //
 //On signals SIGTERM, SIGINT, SIGQUIT, it exits with code 0.
@@ -53,7 +60,7 @@ func (a *agent) Run() {
 	var mutex sync.Mutex
 
 	go func() {
-		updateTime := time.NewTicker(a.options.pollInterval)
+		updateTime := time.NewTicker(a.options.PollInterval)
 		for {
 			<-updateTime.C
 			mutex.Lock()
@@ -64,14 +71,15 @@ func (a *agent) Run() {
 	}()
 
 	go func() {
-		reportTime := time.NewTicker(a.options.reportInterval)
+		reportTime := time.NewTicker(a.options.ReportInterval)
 		for {
 			<-reportTime.C
 			mutex.Lock()
 			if err := a.sendAllMetricsJSON(); err != nil {
 				log.Println(err)
+			} else {
+				log.Println("AllMetrics sent successfully.")
 			}
-			log.Println("AllMetrics sent successfully.")
 			mutex.Unlock()
 		}
 	}()
@@ -83,20 +91,21 @@ func (a *agent) Run() {
 
 func newDefaultOptions() *options {
 	srvAddr := "127.0.0.1:8080"
-	return &options{
-		pollInterval:          2 * time.Second,
-		reportInterval:        10 * time.Second,
-		srvAddr:               srvAddr,
+	opt := &options{
+		PollInterval:          2 * time.Second,
+		ReportInterval:        10 * time.Second,
+		SrvAddr:               srvAddr,
 		updateTemplateJSONURL: "http://" + srvAddr + "/update/",
 		getTemplateJSONURL:    "http://" + srvAddr + "/value/",
 		contentTypeJSON:       "application/json",
 	}
+	return opt
 }
 
 func (a *agent) sendAllMetricsJSON() error {
 
-	for _, metric := range *a.memory.Metrics {
-		if _, err := a.sendMetricJSON(metric); err != nil {
+	for _, currMetric := range *a.memory.Metrics {
+		if _, err := a.sendMetricJSON(currMetric); err != nil {
 			return err
 		}
 	}

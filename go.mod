@@ -9,6 +9,7 @@ require (
 )
 
 require (
+	github.com/caarlos0/env/v6 v6.9.3 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	golang.org/x/net v0.0.0-20220708220712-1185a9018129 // indirect
