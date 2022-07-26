@@ -67,7 +67,7 @@ func mockValueHandler(w http.ResponseWriter, r *http.Request) {
 
 func Test_agent_sendMetric(t *testing.T) {
 	mockServer := httptest.NewUnstartedServer(mockRouter())
-	listener, _ := net.Listen("tcp", testAgent.options.srvAddr)
+	listener, _ := net.Listen("tcp", testAgent.options.SrvAddr)
 	mockServer.Listener = listener
 	mockServer.Start()
 	defer mockServer.Close()
