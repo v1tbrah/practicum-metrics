@@ -5,6 +5,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/v1tbrah/metricsAndAlerting/internal/server/service"
+	"log"
 	"net/http"
 )
 
@@ -21,7 +22,10 @@ type api struct {
 func NewAPI(service *service.Service) *api {
 	server := &http.Server{}
 	options := newDefaultOptions()
-	env.Parse(options)
+	err := env.Parse(options)
+	if err != nil {
+		log.Println(err)
+	}
 	server.Addr = options.Addr
 
 	newAPI := &api{

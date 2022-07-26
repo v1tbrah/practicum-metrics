@@ -2,7 +2,7 @@ package agent
 
 import (
 	"encoding/json"
-	
+
 	"log"
 	"os"
 	"os/signal"
@@ -10,7 +10,7 @@ import (
 	"syscall"
 	"time"
 
-  "github.com/caarlos0/env/v6"
+	"github.com/caarlos0/env/v6"
 	"github.com/go-resty/resty/v2"
 
 	"github.com/v1tbrah/metricsAndAlerting/internal/agent/memory"
@@ -24,15 +24,9 @@ type agent struct {
 }
 
 type options struct {
-	PollInterval          time.Duration `env:"POLL_INTERVAL" envDefault:"2s"`
-	ReportInterval        time.Duration `env:"REPORT_INTERVAL" envDefault:"10s"`
-	SrvAddr               string        `env:"ADDRESS" envDefault:"127.0.0.1:8080"`
-	updateTemplateURL     string
-	getTemplateURL        string
-	contentTypeTextPlain  string
-	updateTemplateJSONURL string
-	getTemplateJSONURL    string
-	contentTypeJSON       string
+	PollInterval   time.Duration `env:"POLL_INTERVAL" envDefault:"2s"`
+	ReportInterval time.Duration `env:"REPORT_INTERVAL" envDefault:"10s"`
+	SrvAddr        string        `env:"ADDRESS" envDefault:"127.0.0.1:8080"`
 }
 
 // NewAgent with default settings.
@@ -90,16 +84,20 @@ func (a *agent) Run() {
 }
 
 func newDefaultOptions() *options {
-	srvAddr := "127.0.0.1:8080"
 	opt := &options{
-		PollInterval:          2 * time.Second,
-		ReportInterval:        10 * time.Second,
-		SrvAddr:               srvAddr,
-		updateTemplateJSONURL: "http://" + srvAddr + "/update/",
-		getTemplateJSONURL:    "http://" + srvAddr + "/value/",
-		contentTypeJSON:       "application/json",
+		PollInterval:   2 * time.Second,
+		ReportInterval: 10 * time.Second,
+		SrvAddr:        "127.0.0.1:8080",
 	}
 	return opt
+}
+
+func (a *agent) updateTemplateJSONURL() string {
+	return "http://" + a.options.SrvAddr + "/update/"
+}
+
+func (a *agent) getTemplateJSONURL() string {
+	return "http://" + a.options.SrvAddr + "/value/"
 }
 
 func (a *agent) sendAllMetricsJSON() error {
@@ -121,13 +119,12 @@ func (a *agent) sendMetricJSON(metric metric.Metrics) (*resty.Response, error) {
 	}
 
 	resp, err := a.client.NewRequest().
-		SetHeader("Content-Type", a.options.contentTypeJSON).
+		SetHeader("Content-Type", "application/json").
 		SetBody(body).
-		Post(a.options.updateTemplateJSONURL)
+		Post(a.updateTemplateJSONURL())
 
 	return resp, err
 }
-
 
 func (a *agent) getAllMetricJSON() error {
 
@@ -151,9 +148,9 @@ func (a *agent) getMetricJSON(metric metric.Metrics) (*resty.Response, error) {
 	}
 
 	resp, err := a.client.NewRequest().
-		SetHeader("Content-Type", a.options.contentTypeJSON).
+		SetHeader("Content-Type", "application/json").
 		SetBody(body).
-		Post(a.options.getTemplateJSONURL)
+		Post(a.getTemplateJSONURL())
 
 	return resp, err
 }
