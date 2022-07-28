@@ -18,8 +18,7 @@ type options struct {
 	StoreInterval time.Duration `env:"STORE_INTERVAL" envDefault:"300s"`
 	StoreFile     string        `env:"STORE_FILE"`
 	Restore       bool          `env:"RESTORE" envDefault:"true"`
-)
-
+}
 
 type api struct {
 	server  *http.Server
