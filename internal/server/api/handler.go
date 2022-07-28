@@ -4,15 +4,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/v1tbrah/metricsAndAlerting/internal/server/repo/metric"
+	"github.com/v1tbrah/metricsAndAlerting/internal/server/service"
 	"io"
 	"log"
 	"net/http"
 	"sort"
 	"strconv"
-	"sync"
-
-	"github.com/v1tbrah/metricsAndAlerting/internal/server/repo/metric"
-	"github.com/v1tbrah/metricsAndAlerting/internal/server/service"
 )
 
 var (
@@ -24,7 +22,7 @@ var (
 func (a *api) updateHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		infoFromURL := newInfoUpdateURL(r.URL.Path)
-		metricFromRequest := metric.Metrics{}
+		metricFromRequest := &metric.Metrics{}
 		metricFromRequest.MType = infoFromURL.typeM
 		metricFromRequest.ID = infoFromURL.nameM
 
@@ -36,7 +34,7 @@ func (a *api) updateHandler() http.HandlerFunc {
 				return
 			}
 			metricFromRequest.Value = &value
-			a.updateGaugeHandler(&metricFromRequest, w, r)
+			a.updateGaugeHandler(metricFromRequest, w, r)
 		case "counter":
 			value, err := strconv.Atoi(infoFromURL.valM)
 			if err != nil {
@@ -45,7 +43,7 @@ func (a *api) updateHandler() http.HandlerFunc {
 			}
 			valueInt64 := int64(value)
 			metricFromRequest.Delta = &valueInt64
-			a.updateCounterHandler(&metricFromRequest, w, r)
+			a.updateCounterHandler(metricFromRequest, w, r)
 		}
 	}
 }
@@ -62,7 +60,7 @@ func (a *api) getValueHandler() http.HandlerFunc {
 			http.Error(w, "metric not found", http.StatusNotFound)
 			return
 		}
-		metricValOnServ := metricOnServ.(*metric.Metrics)
+		metricValOnServ := metricOnServ.(metric.Metrics)
 		if metricFromRequest.MType == "gauge" {
 			w.Write([]byte(fmt.Sprintf("%v", *metricValOnServ.Value)))
 		} else if metricFromRequest.MType == "counter" {
@@ -73,8 +71,8 @@ func (a *api) getValueHandler() http.HandlerFunc {
 
 func (a *api) updateJSONHandler(w http.ResponseWriter, r *http.Request) {
 
-	metricFromRequest := metric.Metrics{}
-	if !tryFillMetricFromRequest(&metricFromRequest, w, r) {
+	metricFromRequest := &metric.Metrics{}
+	if !tryFillMetricFromRequest(metricFromRequest, w, r) {
 		return
 	}
 
@@ -92,15 +90,15 @@ func (a *api) updateJSONHandler(w http.ResponseWriter, r *http.Request) {
 
 	switch metricFromRequest.MType {
 	case "gauge":
-		a.updateGaugeHandler(&metricFromRequest, w, r)
+		a.updateGaugeHandler(metricFromRequest, w, r)
 	case "counter":
-		a.updateCounterHandler(&metricFromRequest, w, r)
+		a.updateCounterHandler(metricFromRequest, w, r)
 	}
 }
 
 func (a *api) getValueJSONHandler(w http.ResponseWriter, r *http.Request) {
-	metricFromRequest := metric.Metrics{}
-	if !tryFillMetricFromRequest(&metricFromRequest, w, r) {
+	metricFromRequest := &metric.Metrics{}
+	if !tryFillMetricFromRequest(metricFromRequest, w, r) {
 		return
 	}
 
@@ -120,7 +118,7 @@ func tryFillMetricFromRequest(fillableMetric *metric.Metrics, w http.ResponseWri
 		w.WriteHeader(http.StatusBadRequest)
 		return false
 	}
-	err = json.Unmarshal(body, &fillableMetric)
+	err = json.Unmarshal(body, fillableMetric)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return false
@@ -157,15 +155,15 @@ func (a *api) getPageHandler() http.HandlerFunc {
 func (a *api) updateGaugeHandler(newMetric *metric.Metrics, w http.ResponseWriter, r *http.Request) {
 
 	interfaceMForUpd, ok := a.service.MemStorage.Metrics.Load(newMetric.ID)
-	var mForUpd *metric.Metrics
+	var mForUpd metric.Metrics
 	if !ok {
-		mForUpd = &metric.Metrics{}
+		mForUpd = metric.Metrics{}
 		mForUpd.ID = newMetric.ID
 		mForUpd.MType = newMetric.MType
 		var value float64
 		mForUpd.Value = &value
 	} else {
-		mForUpd = interfaceMForUpd.(*metric.Metrics)
+		mForUpd = interfaceMForUpd.(metric.Metrics)
 	}
 	*mForUpd.Value = *newMetric.Value
 
@@ -177,15 +175,15 @@ func (a *api) updateGaugeHandler(newMetric *metric.Metrics, w http.ResponseWrite
 func (a *api) updateCounterHandler(newMetric *metric.Metrics, w http.ResponseWriter, r *http.Request) {
 
 	interfaceMForUpd, ok := a.service.MemStorage.Metrics.Load(newMetric.ID)
-	var mForUpd *metric.Metrics
+	var mForUpd metric.Metrics
 	if !ok {
-		mForUpd = &metric.Metrics{}
+		mForUpd = metric.Metrics{}
 		mForUpd.ID = newMetric.ID
 		mForUpd.MType = newMetric.MType
 		var value int64
 		mForUpd.Delta = &value
 	} else {
-		mForUpd = interfaceMForUpd.(*metric.Metrics)
+		mForUpd = interfaceMForUpd.(metric.Metrics)
 	}
 
 	*mForUpd.Delta += *newMetric.Delta
@@ -195,18 +193,18 @@ func (a *api) updateCounterHandler(newMetric *metric.Metrics, w http.ResponseWri
 	w.WriteHeader(http.StatusOK)
 }
 
-func fillMetricsForPage(dataForPage *[]string, metrics *sync.Map) {
+func fillMetricsForPage(dataForPage *[]string, metrics *metric.AllMetrics) {
 	*dataForPage = append(*dataForPage, sortedMetricsForPage(metrics)...)
 }
 
-func sortedMetricsForPage(metrics *sync.Map) []string {
+func sortedMetricsForPage(metrics *metric.AllMetrics) []string {
 	sortedMetrics := []string{}
 	metrics.Range(func(key, value any) bool {
-		metric := value.(*metric.Metrics)
-		if metric.MType == "gauge" {
-			sortedMetrics = append(sortedMetrics, metric.ID+": "+fmt.Sprintf("%f", *metric.Value))
-		} else if metric.MType == "counter" {
-			sortedMetrics = append(sortedMetrics, metric.ID+": "+fmt.Sprintf("%v", *metric.Delta))
+		currMetric := value.(metric.Metrics)
+		if currMetric.MType == "gauge" {
+			sortedMetrics = append(sortedMetrics, currMetric.ID+": "+fmt.Sprintf("%f", *currMetric.Value))
+		} else if currMetric.MType == "counter" {
+			sortedMetrics = append(sortedMetrics, currMetric.ID+": "+fmt.Sprintf("%v", *currMetric.Delta))
 		}
 		return true
 	})

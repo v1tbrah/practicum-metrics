@@ -7,15 +7,23 @@ import (
 	"github.com/v1tbrah/metricsAndAlerting/internal/server/service"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 )
 
 type options struct {
-	Addr string `env:"ADDRESS" envDefault:"127.0.0.1:8080"`
+	Addr          string        `env:"ADDRESS" envDefault:"127.0.0.1:8080"`
+	StoreInterval time.Duration `env:"STORE_INTERVAL" envDefault:"300s"`
+	StoreFile     string        `env:"STORE_FILE"`
+	Restore       bool          `env:"RESTORE" envDefault:"true"`
 }
 
 type api struct {
 	server  *http.Server
 	service *service.Service
+	options *options
 }
 
 // Creates the API.
@@ -30,7 +38,8 @@ func NewAPI(service *service.Service) *api {
 
 	newAPI := &api{
 		server:  server,
-		service: service}
+		service: service,
+		options: options}
 
 	server.Handler = newAPI.newRouter()
 	return newAPI
@@ -41,8 +50,31 @@ func newDefaultOptions() *options {
 }
 
 //The API starts.
-func (a *api) Run() error {
-	return a.server.ListenAndServe()
+func (a *api) Run() {
+	exit := make(chan os.Signal, 1)
+	signal.Notify(exit, os.Interrupt, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
+
+	if a.options.Restore {
+		if err := a.service.RestoreMetricsFromFile(a.options.StoreFile); err != nil {
+			log.Println(err)
+		} else {
+			log.Println("Metrics restored from file:", a.options.StoreFile)
+		}
+	}
+
+	if needWriteMetricsToFileWithInterval := a.options.StoreInterval != time.Second*0; needWriteMetricsToFileWithInterval {
+		go a.service.WriteMetricsToFileWithInterval(a.options.StoreFile, a.options.StoreInterval)
+	}
+
+	go func() {
+		log.Println(a.server.ListenAndServe())
+	}()
+
+	<-exit
+	if err := a.service.SaveMetricsToFile(a.options.StoreFile); err != nil {
+		log.Println(err)
+	}
+	os.Exit(0)
 }
 
 func (a *api) newRouter() chi.Router {
