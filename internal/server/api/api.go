@@ -39,6 +39,8 @@ func (a *api) newRouter() chi.Router {
 	r := chi.NewRouter()
 
 	r.Use(middleware.Logger)
+	r.Use(gzipReadHandle)
+	r.Use(gzipWriteHandle)
 
 	r.Get("/", a.getPageHandler())
 	r.Post("/update/", a.updateJSONHandler)
