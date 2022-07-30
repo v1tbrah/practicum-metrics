@@ -62,8 +62,5 @@ type Metrics struct {
 }
 
 func (m *Metrics) TypeIsValid() bool {
-	if m.MType == "gauge" || m.MType == "counter" {
-		return true
-	}
-	return false
+	return m.MType == "gauge" || m.MType == "counter"
 }
