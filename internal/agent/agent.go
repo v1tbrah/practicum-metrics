@@ -10,7 +10,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/caarlos0/env/v6"
 	"github.com/go-resty/resty/v2"
 
 	"github.com/v1tbrah/metricsAndAlerting/internal/agent/memory"
@@ -23,23 +22,17 @@ type agent struct {
 	memory  *memory.MemStorage
 }
 
-type options struct {
-	PollInterval   time.Duration `env:"POLL_INTERVAL" envDefault:"2s"`
-	ReportInterval time.Duration `env:"REPORT_INTERVAL" envDefault:"10s"`
-	SrvAddr        string        `env:"ADDRESS" envDefault:"127.0.0.1:8080"`
-}
-
 // NewAgent with default settings.
 func NewAgent() *agent {
-	agent := agent{
+	newAgent := agent{
 		client:  resty.New(),
 		options: newDefaultOptions(),
 		memory:  memory.NewMemStorage()}
-	err := env.Parse(agent.options)
-	if err != nil {
-		log.Println(err)
-	}
-	return &agent
+
+	newAgent.options.parseFromOsArgs()
+	newAgent.options.parseFromEnv()
+
+	return &newAgent
 }
 
 //Run agent updating the metrics once per pollInterval and sends them to the server once per reportInterval.
@@ -81,15 +74,6 @@ func (a *agent) Run() {
 	<-shutdown
 	os.Exit(0)
 
-}
-
-func newDefaultOptions() *options {
-	opt := &options{
-		PollInterval:   2 * time.Second,
-		ReportInterval: 10 * time.Second,
-		SrvAddr:        "127.0.0.1:8080",
-	}
-	return opt
 }
 
 func (a *agent) updateTemplateJSONURL() string {

@@ -36,7 +36,7 @@ func (s *Service) SaveMetricsToFile(fileName string) error {
 		log.Println(err)
 		return err
 	}
-	if _, err = file.Write([]byte(dataMetrics)); err != nil {
+	if _, err = file.Write(dataMetrics); err != nil {
 		log.Println(err)
 		return err
 	}
