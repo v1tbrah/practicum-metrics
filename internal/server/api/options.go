@@ -4,6 +4,8 @@ import (
 	"flag"
 	"github.com/caarlos0/env/v6"
 	"log"
+	"os"
+	"strings"
 	"time"
 )
 
@@ -22,6 +24,9 @@ func newDefaultOptions() *options {
 }
 
 func (o *options) parseFromOsArgs() {
+	if strings.Contains(os.Args[0], ".test") {
+		return
+	}
 	defaultOptions := newDefaultOptions()
 
 	flag.StringVar(&o.Addr, "a", defaultOptions.Addr, "api server address")

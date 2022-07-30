@@ -4,6 +4,8 @@ import (
 	"flag"
 	"github.com/caarlos0/env/v6"
 	"log"
+	"os"
+	"strings"
 	"time"
 )
 
@@ -23,13 +25,18 @@ func newDefaultOptions() *options {
 }
 
 func (o *options) parseFromOsArgs() {
+	if strings.Contains(os.Args[0], ".test") {
+		return
+	}
 	defaultOptions := newDefaultOptions()
 
 	flag.StringVar(&o.SrvAddr, "a", defaultOptions.SrvAddr, "api server address")
 	flag.DurationVar(&o.PollInterval, "p", defaultOptions.PollInterval, "interval for updating metrics from runtime")
 	flag.DurationVar(&o.ReportInterval, "r", defaultOptions.ReportInterval, "interval for report metrics to server")
 
-	flag.Parse()
+	if !flag.Parsed() {
+		flag.Parse()
+	}
 }
 
 func (o *options) parseFromEnv() {
