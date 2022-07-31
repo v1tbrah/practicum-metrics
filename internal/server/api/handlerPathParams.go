@@ -11,7 +11,7 @@ import (
 func (a *api) updateMetricHandlerPathParams() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		metricFromRequest := &repo.Metrics{}
-		if err, statusCode := fillMetricFromPathParams(metricFromRequest, "update", r.URL.Path); err != nil {
+		if statusCode, err := fillMetricFromPathParams(metricFromRequest, "update", r.URL.Path); err != nil {
 			http.Error(w, err.Error(), statusCode)
 			return
 		}
@@ -31,7 +31,7 @@ func (a *api) updateMetricHandlerPathParams() http.HandlerFunc {
 func (a *api) getMetricValueHandlerPathParams() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		metricFromRequest := &repo.Metrics{}
-		if err, statusCode := fillMetricFromPathParams(metricFromRequest, "value", r.URL.Path); err != nil {
+		if statusCode, err := fillMetricFromPathParams(metricFromRequest, "value", r.URL.Path); err != nil {
 			http.Error(w, err.Error(), statusCode)
 			return
 		}
@@ -44,14 +44,14 @@ func (a *api) getMetricValueHandlerPathParams() http.HandlerFunc {
 
 		metricLocal := metricLocalInterface.(repo.Metrics)
 		if metricFromRequest.MType == "gauge" {
-			w.Write([]byte(fmt.Sprintf("%f", *metricLocal.Value)))
+			w.Write([]byte(fmt.Sprintf("%v", *metricLocal.Value)))
 		} else if metricFromRequest.MType == "counter" {
-			w.Write([]byte(fmt.Sprintf("%d", *metricLocal.Delta)))
+			w.Write([]byte(fmt.Sprintf("%v", *metricLocal.Delta)))
 		}
 	}
 }
 
-func fillMetricFromPathParams(metric *repo.Metrics, handlerType, path string) (error, int) {
+func fillMetricFromPathParams(metric *repo.Metrics, handlerType, path string) (int, error) {
 	var pathInfo *pathInfo
 	if handlerType == "update" {
 		pathInfo = newInfoUpdateURL(path)
@@ -59,47 +59,47 @@ func fillMetricFromPathParams(metric *repo.Metrics, handlerType, path string) (e
 		pathInfo = newInfoGetValueURL(path)
 	}
 	if pathInfo.typeM == "" {
-		return ErrMetricTypeNotSpecified, http.StatusNotFound
+		return http.StatusNotFound, ErrMetricTypeNotSpecified
 	}
 	metric.MType = pathInfo.typeM
 	if !metric.TypeIsValid() {
-		return ErrMetricTypeNotImplemented, http.StatusNotImplemented
+		return http.StatusNotImplemented, ErrMetricTypeNotImplemented
 	}
 	if pathInfo.nameM == "" {
-		return ErrMetricNameNotSpecified, http.StatusNotFound
+		return http.StatusNotFound, ErrMetricNameNotSpecified
 	}
 
 	metric.ID = pathInfo.nameM
 
 	if handlerType == "update" {
-		if err, httpStatusCode := fillMetricValueFromPathInfo(metric, pathInfo); err != nil {
-			return err, httpStatusCode
+		if httpStatusCode, err := fillMetricValueFromPathInfo(metric, pathInfo); err != nil {
+			return httpStatusCode, err
 		}
 	}
 
-	return nil, 0
+	return 0, nil
 }
 
-func fillMetricValueFromPathInfo(metric *repo.Metrics, pathInfo *pathInfo) (error, int) {
+func fillMetricValueFromPathInfo(metric *repo.Metrics, pathInfo *pathInfo) (int, error) {
 	if pathInfo.valM == "" {
-		return ErrMetricValueNotSpecified, http.StatusNotFound
+		return http.StatusNotFound, ErrMetricValueNotSpecified
 	}
 
 	if metric.MType == "gauge" {
 		value, err := strconv.ParseFloat(pathInfo.valM, 64)
 		if err != nil {
-			return err, http.StatusBadRequest
+			return http.StatusBadRequest, err
 		}
 		metric.Value = &value
 	} else if metric.MType == "counter" {
 		value, err := strconv.Atoi(pathInfo.valM)
 		if err != nil {
-			return err, http.StatusBadRequest
+			return http.StatusBadRequest, err
 		}
 		valueInt64 := int64(value)
 		metric.Delta = &valueInt64
 	} else {
-		return ErrMetricTypeNotImplemented, 0
+		return 0, ErrMetricTypeNotImplemented
 	}
-	return nil, 0
+	return 0, nil
 }

@@ -68,24 +68,18 @@ func (m *Data) updateGaugeMetrics() {
 			continue
 		}
 		var valueForUpd float64
-		statValueInterface := reflectStatField.Interface()
-		switch statValueInterface.(type) {
+		switch statValue := reflectStatField.Interface().(type) {
 		case float64:
-			valueForUpd, _ = statValueInterface.(float64)
+			valueForUpd = statValue
 		case float32:
-			statValue, _ := statValueInterface.(float32)
 			valueForUpd = float64(statValue)
 		case uint64:
-			statValue, _ := statValueInterface.(uint64)
 			valueForUpd = float64(statValue)
 		case uint32:
-			statValue, _ := statValueInterface.(uint32)
 			valueForUpd = float64(statValue)
 		case uint16:
-			statValue, _ := statValueInterface.(uint16)
 			valueForUpd = float64(statValue)
 		case uint8:
-			statValue, _ := statValueInterface.(uint8)
 			valueForUpd = float64(statValue)
 		default:
 			log.Fatalln("unsupported metric type")

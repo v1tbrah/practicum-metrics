@@ -23,11 +23,11 @@ var (
 
 func (a *api) updateMetricHandler(w http.ResponseWriter, r *http.Request) {
 	metricFromRequest := &repo.Metrics{}
-	if err, statusCode := fillMetricFromRequestBody(metricFromRequest, r.Body); err != nil {
+	if statusCode, err := fillMetricFromRequestBody(metricFromRequest, r.Body); err != nil {
 		http.Error(w, err.Error(), statusCode)
 		return
 	}
-	if err, statusCode := checkValidMetricFromRequest(metricFromRequest, "update"); err != nil {
+	if statusCode, err := checkValidMetricFromRequest(metricFromRequest, "update"); err != nil {
 		http.Error(w, err.Error(), statusCode)
 		return
 	}
@@ -45,11 +45,11 @@ func (a *api) updateMetricHandler(w http.ResponseWriter, r *http.Request) {
 
 func (a *api) getMetricValueHandler(w http.ResponseWriter, r *http.Request) {
 	metricFromRequest := &repo.Metrics{}
-	if err, statusCode := fillMetricFromRequestBody(metricFromRequest, r.Body); err != nil {
+	if statusCode, err := fillMetricFromRequestBody(metricFromRequest, r.Body); err != nil {
 		http.Error(w, err.Error(), statusCode)
 		return
 	}
-	if err, statusCode := checkValidMetricFromRequest(metricFromRequest, "value"); err != nil {
+	if statusCode, err := checkValidMetricFromRequest(metricFromRequest, "value"); err != nil {
 		http.Error(w, err.Error(), statusCode)
 		return
 	}
@@ -64,37 +64,37 @@ func (a *api) getMetricValueHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(resp)
 }
 
-func fillMetricFromRequestBody(metric *repo.Metrics, requestBody io.ReadCloser) (error, int) {
+func fillMetricFromRequestBody(metric *repo.Metrics, requestBody io.ReadCloser) (int, error) {
 	body, err := io.ReadAll(requestBody)
 	if err != nil && err != io.EOF {
-		return errors.New("err body reading"), http.StatusBadRequest
+		return http.StatusBadRequest, errors.New("err body reading")
 	}
 	if err = json.Unmarshal(body, metric); err != nil {
-		return errors.New("invalid json"), http.StatusBadRequest
+		return http.StatusBadRequest, errors.New("invalid json")
 	}
-	return nil, 0
+	return 0, nil
 }
 
-func checkValidMetricFromRequest(metric *repo.Metrics, requestType string) (error, int) {
+func checkValidMetricFromRequest(metric *repo.Metrics, requestType string) (int, error) {
 	if metric.MType == "" {
-		return ErrMetricTypeNotSpecified, http.StatusNotFound
+		return http.StatusNotFound, ErrMetricTypeNotSpecified
 	}
 	if !metric.TypeIsValid() {
-		return ErrMetricTypeNotImplemented, http.StatusNotImplemented
+		return http.StatusNotImplemented, ErrMetricTypeNotImplemented
 	}
 	if metric.ID == "" {
-		return ErrMetricNameNotSpecified, http.StatusNotFound
+		return http.StatusNotFound, ErrMetricNameNotSpecified
 	}
 	if requestType == "update" {
 		if metric.MType == "gauge" && metric.Value == nil {
 			if metric.Value == nil {
-				return ErrMetricValueNotSpecified, http.StatusNotFound
+				return http.StatusNotFound, ErrMetricValueNotSpecified
 			}
 		} else if metric.MType == "counter" && metric.Delta == nil {
-			return ErrMetricValueNotSpecified, http.StatusNotFound
+			return http.StatusNotFound, ErrMetricValueNotSpecified
 		}
 	}
-	return nil, 0
+	return 0, nil
 }
 
 func (a *api) updateGaugeMetric(newMetric *repo.Metrics, w http.ResponseWriter, r *http.Request) {
