@@ -7,14 +7,14 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/v1tbrah/metricsAndAlerting/internal/agent/service/mockAPI"
+	"github.com/v1tbrah/metricsAndAlerting/internal/agent/service/mockapi"
 )
 
 func Test_service_reportMetric(t *testing.T) {
 
 	myService := NewService()
 
-	API := mockAPI.NewAPI(myService.options.ServerAddr, *myService.data)
+	API := mockapi.NewAPI(myService.options.ServerAddr, *myService.data)
 	defer API.Server.Close()
 
 	tests := []struct {
@@ -54,7 +54,7 @@ func Test_service_getMetric(t *testing.T) {
 
 	myService := NewService()
 
-	API := mockAPI.NewAPI(myService.options.ServerAddr, *myService.data)
+	API := mockapi.NewAPI(myService.options.ServerAddr, *myService.data)
 	defer API.Server.Close()
 
 	tests := []struct {

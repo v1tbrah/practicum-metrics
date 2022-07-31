@@ -7,6 +7,7 @@ type Metrics struct {
 	Value *float64 `json:"value,omitempty"`
 }
 
+// NewMetric returns new Metrics.
 func NewMetric(ID, MType string) Metrics {
 	newMetric := Metrics{
 		ID:    ID,
@@ -22,6 +23,7 @@ func NewMetric(ID, MType string) Metrics {
 	return newMetric
 }
 
+// TypeIsValid checks the validity of metrics.
 func (m *Metrics) TypeIsValid() bool {
 	return m.MType == "gauge" || m.MType == "counter"
 }

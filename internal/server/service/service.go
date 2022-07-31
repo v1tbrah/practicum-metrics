@@ -3,20 +3,21 @@ package service
 import (
 	"encoding/json"
 	"errors"
-	"github.com/v1tbrah/metricsAndAlerting/internal/server/repo/memory"
-	"github.com/v1tbrah/metricsAndAlerting/internal/server/repo/metric"
 	"io"
 	"log"
 	"os"
 	"time"
+
+	"github.com/v1tbrah/metricsAndAlerting/internal/server/repo"
+	"github.com/v1tbrah/metricsAndAlerting/internal/server/repo/memory"
 )
 
 type Service struct {
-	MemStorage *memory.MemStorage
+	MemStorage *memory.Storage
 }
 
-// Creates a Service.
-func NewService(memStorage *memory.MemStorage) *Service {
+// NewService returns new Service.
+func NewService(memStorage *memory.Storage) *Service {
 	return &Service{MemStorage: memStorage}
 }
 
@@ -31,7 +32,7 @@ func (s *Service) SaveMetricsToFile(fileName string) error {
 	}
 	defer file.Close()
 
-	dataMetrics, err := json.Marshal(s.MemStorage.Metrics)
+	dataMetrics, err := json.Marshal(s.MemStorage.Data)
 	if err != nil {
 		log.Println(err)
 		return err
@@ -50,9 +51,9 @@ func (s *Service) WriteMetricsToFileWithInterval(fileName string, interval time.
 	if intervalIsSet := interval != time.Second*0; !intervalIsSet {
 		return
 	}
-	storeInterval := time.NewTicker(interval)
+	ticker := time.NewTicker(interval)
 	for {
-		<-storeInterval.C
+		<-ticker.C
 		if err := s.SaveMetricsToFile(fileName); err != nil {
 			log.Println(err)
 		} else {
@@ -66,12 +67,12 @@ func (s *Service) RestoreMetricsFromFile(fileName string) error {
 	if err != nil {
 		return err
 	}
-	newMetrics := metric.NewAllMetrics()
+	newMetrics := repo.NewData()
 	if err = json.NewDecoder(file).Decode(newMetrics); err != nil {
 		if !errors.Is(err, io.EOF) {
 			return err
 		}
 	}
-	s.MemStorage.Metrics = newMetrics
+	s.MemStorage.Data = newMetrics
 	return nil
 }

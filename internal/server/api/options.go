@@ -2,11 +2,12 @@ package api
 
 import (
 	"flag"
-	"github.com/caarlos0/env/v6"
 	"log"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/caarlos0/env/v6"
 )
 
 type options struct {
@@ -27,12 +28,11 @@ func (o *options) parseFromOsArgs() {
 	if strings.Contains(os.Args[0], ".test") {
 		return
 	}
-	defaultOptions := newDefaultOptions()
 
-	flag.StringVar(&o.Addr, "a", defaultOptions.Addr, "api server address")
-	flag.DurationVar(&o.StoreInterval, "i", defaultOptions.StoreInterval, "interval for writing metrics to a file")
-	flag.StringVar(&o.StoreFile, "f", defaultOptions.StoreFile, "path to persistent file storage")
-	flag.BoolVar(&o.Restore, "r", defaultOptions.Restore, "flag for loading metrics from a file at the start of the api")
+	flag.StringVar(&o.Addr, "a", o.Addr, "api server address")
+	flag.DurationVar(&o.StoreInterval, "i", o.StoreInterval, "interval for writing metrics to a file")
+	flag.StringVar(&o.StoreFile, "f", o.StoreFile, "path to persistent file storage")
+	flag.BoolVar(&o.Restore, "r", o.Restore, "flag for loading metrics from a file at the start of the api")
 
 	flag.Parse()
 }

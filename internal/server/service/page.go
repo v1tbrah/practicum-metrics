@@ -24,12 +24,12 @@ type dataForPage struct {
 	Metrics []string
 }
 
-// Creates a dataForPage.
+// NewDataForPage returns new dataForPage.
 func NewDataForPage() *dataForPage {
-	return &dataForPage{Title: "Metrics"}
+	return &dataForPage{Title: "Data"}
 }
 
-// Returns the completed start page template.
+// Page returns the completed start page template.
 func (m *dataForPage) Page() (string, error) {
 	buf := &bytes.Buffer{}
 	t, err := template.New("webpage").Parse(pageTpl)

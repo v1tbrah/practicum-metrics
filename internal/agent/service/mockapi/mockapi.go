@@ -1,4 +1,4 @@
-package mockAPI
+package mockapi
 
 import (
 	"io"

@@ -3,20 +3,20 @@ package api
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/v1tbrah/metricsAndAlerting/internal/server/repo/metric"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/v1tbrah/metricsAndAlerting/internal/server/repo"
 	"github.com/v1tbrah/metricsAndAlerting/internal/server/repo/memory"
 	"github.com/v1tbrah/metricsAndAlerting/internal/server/service"
 )
 
 func TestUpdateHandler(t *testing.T) {
 
-	testAPI := NewAPI(service.NewService(memory.NewMemStorage()))
+	testAPI := NewAPI(service.NewService(memory.NewStorage()))
 
 	localHost := "http://127.0.0.1:8080"
 
@@ -110,7 +110,7 @@ func TestUpdateHandler(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			request := tt.args.request
 			w := httptest.NewRecorder()
-			h := http.HandlerFunc(testAPI.updateJSONHandler)
+			h := http.HandlerFunc(testAPI.updateMetricHandler)
 			h.ServeHTTP(w, request)
 			result := w.Result()
 			defer result.Body.Close()
@@ -123,7 +123,7 @@ func TestUpdateHandler(t *testing.T) {
 func updateBody(MName, MType string, Value float64, Delta int64) *bytes.Buffer {
 	allocValue := Value
 	deltaValue := Delta
-	metricForBody := metric.Metrics{
+	metricForBody := repo.Metrics{
 		ID:    MName,
 		MType: MType,
 		Delta: &deltaValue,
@@ -137,11 +137,11 @@ func TestGetValueHandler(t *testing.T) {
 
 	localHost := "http://127.0.0.1:8080"
 
-	testAPI := NewAPI(service.NewService(memory.NewMemStorage()))
+	testAPI := NewAPI(service.NewService(memory.NewStorage()))
 
 	gaugeValue := 2.22
-	testAPIWithAllocMetric := NewAPI(service.NewService(memory.NewMemStorage()))
-	testAPIWithAllocMetric.service.MemStorage.Metrics.Store("Alloc", &metric.Metrics{
+	testAPIWithAllocMetric := NewAPI(service.NewService(memory.NewStorage()))
+	testAPIWithAllocMetric.service.MemStorage.Data.Store("Alloc", &repo.Metrics{
 		ID:    "Alloc",
 		MType: "gauge",
 		Delta: nil,
@@ -149,8 +149,8 @@ func TestGetValueHandler(t *testing.T) {
 	})
 
 	counterValue := int64(2)
-	testAPIWithCounterMetric := NewAPI(service.NewService(memory.NewMemStorage()))
-	testAPIWithCounterMetric.service.MemStorage.Metrics.Store("PollCount", &metric.Metrics{
+	testAPIWithCounterMetric := NewAPI(service.NewService(memory.NewStorage()))
+	testAPIWithCounterMetric.service.MemStorage.Data.Store("PollCount", &repo.Metrics{
 		ID:    "PollCount",
 		MType: "counter",
 		Delta: &counterValue,
@@ -234,7 +234,7 @@ func TestGetValueHandler(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			request := tt.args.request
 			w := httptest.NewRecorder()
-			h := http.HandlerFunc(tt.args.api.getValueJSONHandler)
+			h := http.HandlerFunc(tt.args.api.getMetricValueHandler)
 			h.ServeHTTP(w, request)
 			result := w.Result()
 			defer result.Body.Close()
@@ -245,7 +245,7 @@ func TestGetValueHandler(t *testing.T) {
 }
 
 func getBody(MName, MType string) *bytes.Buffer {
-	metricForBody := metric.Metrics{
+	metricForBody := repo.Metrics{
 		ID:    MName,
 		MType: MType,
 	}

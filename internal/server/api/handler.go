@@ -4,204 +4,161 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/v1tbrah/metricsAndAlerting/internal/server/repo/metric"
-	"github.com/v1tbrah/metricsAndAlerting/internal/server/service"
 	"io"
 	"log"
 	"net/http"
 	"sort"
-	"strconv"
+
+	"github.com/v1tbrah/metricsAndAlerting/internal/server/repo"
+	"github.com/v1tbrah/metricsAndAlerting/internal/server/service"
 )
 
 var (
 	ErrMetricTypeNotSpecified   = errors.New("metric type not specified")
 	ErrMetricTypeNotImplemented = errors.New("metric type not implemented")
 	ErrMetricNameNotSpecified   = errors.New("metric name not specified")
+	ErrMetricNotFound           = errors.New("metric not found")
 	ErrMetricValueNotSpecified  = errors.New("metric value not specified")
 )
 
-func (a *api) updateHandler() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		infoFromURL := newInfoUpdateURL(r.URL.Path)
-		metricFromRequest := &metric.Metrics{}
-		metricFromRequest.MType = infoFromURL.typeM
-		metricFromRequest.ID = infoFromURL.nameM
-
-		switch metricFromRequest.MType {
-		case "gauge":
-			value, err := strconv.ParseFloat(infoFromURL.valM, 64)
-			if err != nil {
-				http.Error(w, fmt.Sprintf("%s", err), http.StatusBadRequest)
-				return
-			}
-			metricFromRequest.Value = &value
-			a.updateGaugeHandler(metricFromRequest, w, r)
-		case "counter":
-			value, err := strconv.Atoi(infoFromURL.valM)
-			if err != nil {
-				http.Error(w, fmt.Sprintf("%s", err), http.StatusBadRequest)
-				return
-			}
-			valueInt64 := int64(value)
-			metricFromRequest.Delta = &valueInt64
-			a.updateCounterHandler(metricFromRequest, w, r)
-		}
-	}
-}
-
-func (a *api) getValueHandler() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		infoFromURL := newInfoGetValueURL(r.URL.Path)
-		metricFromRequest := metric.Metrics{}
-		metricFromRequest.MType = infoFromURL.typeM
-		metricFromRequest.ID = infoFromURL.nameM
-
-		metricOnServ, ok := a.service.MemStorage.Metrics.Load(metricFromRequest.ID)
-		if !ok {
-			http.Error(w, "metric not found", http.StatusNotFound)
-			return
-		}
-		metricValOnServ := metricOnServ.(metric.Metrics)
-		if metricFromRequest.MType == "gauge" {
-			w.Write([]byte(fmt.Sprintf("%v", *metricValOnServ.Value)))
-		} else if metricFromRequest.MType == "counter" {
-			w.Write([]byte(fmt.Sprintf("%v", *metricValOnServ.Delta)))
-		}
-	}
-}
-
-func (a *api) updateJSONHandler(w http.ResponseWriter, r *http.Request) {
-
-	metricFromRequest := &metric.Metrics{}
-	if !tryFillMetricFromRequest(metricFromRequest, w, r) {
+func (a *api) updateMetricHandler(w http.ResponseWriter, r *http.Request) {
+	metricFromRequest := &repo.Metrics{}
+	if err, statusCode := fillMetricFromRequestBody(metricFromRequest, r.Body); err != nil {
+		http.Error(w, err.Error(), statusCode)
 		return
 	}
-
-	if metricFromRequest.MType == "gauge" {
-		if metricFromRequest.Value == nil {
-			http.Error(w, fmt.Sprintf("%s", ErrMetricValueNotSpecified), http.StatusNotFound)
-			return
-		}
-	} else if metricFromRequest.MType == "counter" {
-		if metricFromRequest.Delta == nil {
-			http.Error(w, fmt.Sprintf("%s", ErrMetricValueNotSpecified), http.StatusNotFound)
-			return
-		}
+	if err, statusCode := checkValidMetricFromRequest(metricFromRequest, "update"); err != nil {
+		http.Error(w, err.Error(), statusCode)
+		return
 	}
 
 	switch metricFromRequest.MType {
 	case "gauge":
-		a.updateGaugeHandler(metricFromRequest, w, r)
+		a.updateGaugeMetric(metricFromRequest, w, r)
 	case "counter":
-		a.updateCounterHandler(metricFromRequest, w, r)
+		a.updateCounterMetric(metricFromRequest, w, r)
+	default:
+		http.Error(w, ErrMetricTypeNotImplemented.Error(), http.StatusNotImplemented)
+		return
 	}
 }
 
-func (a *api) getValueJSONHandler(w http.ResponseWriter, r *http.Request) {
-	metricFromRequest := &metric.Metrics{}
-	if !tryFillMetricFromRequest(metricFromRequest, w, r) {
+func (a *api) getMetricValueHandler(w http.ResponseWriter, r *http.Request) {
+	metricFromRequest := &repo.Metrics{}
+	if err, statusCode := fillMetricFromRequestBody(metricFromRequest, r.Body); err != nil {
+		http.Error(w, err.Error(), statusCode)
+		return
+	}
+	if err, statusCode := checkValidMetricFromRequest(metricFromRequest, "value"); err != nil {
+		http.Error(w, err.Error(), statusCode)
 		return
 	}
 
-	metricOnServ, ok := a.service.MemStorage.Metrics.Load(metricFromRequest.ID)
+	metricLocal, ok := a.service.MemStorage.Data.Load(metricFromRequest.ID)
 	if !ok {
-		http.Error(w, "metric not found", http.StatusNotFound)
+		http.Error(w, ErrMetricNotFound.Error(), http.StatusNotFound)
 		return
 	}
-	resp, _ := json.Marshal(metricOnServ)
+	resp, _ := json.Marshal(metricLocal)
 	w.Header().Set("Content-Type", r.Header.Get("Content-Type"))
 	w.Write(resp)
 }
 
-func tryFillMetricFromRequest(fillableMetric *metric.Metrics, w http.ResponseWriter, r *http.Request) bool {
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return false
+func fillMetricFromRequestBody(metric *repo.Metrics, requestBody io.ReadCloser) (error, int) {
+	body, err := io.ReadAll(requestBody)
+	if err != nil && err != io.EOF {
+		return errors.New("err body reading"), http.StatusBadRequest
 	}
-	err = json.Unmarshal(body, fillableMetric)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return false
+	if err = json.Unmarshal(body, metric); err != nil {
+		return errors.New("invalid json"), http.StatusBadRequest
 	}
-	if fillableMetric.MType == "" {
-		http.Error(w, fmt.Sprintf("%s", ErrMetricTypeNotSpecified), http.StatusNotFound)
-		return false
-	}
-	if !fillableMetric.TypeIsValid() {
-		http.Error(w, fmt.Sprintf("%s", ErrMetricTypeNotImplemented), http.StatusNotImplemented)
-		return false
-	}
-	if fillableMetric.ID == "" {
-		http.Error(w, fmt.Sprintf("%s", ErrMetricNameNotSpecified), http.StatusNotFound)
-		return false
-	}
-	return true
+	return nil, 0
 }
 
-func (a *api) getPageHandler() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		dataForPage := service.NewDataForPage()
-		fillMetricsForPage(&dataForPage.Metrics, a.service.MemStorage.Metrics)
-		allMetrics, err := dataForPage.Page()
-		if err != nil {
-			log.Fatalln(err)
+func checkValidMetricFromRequest(metric *repo.Metrics, requestType string) (error, int) {
+	if metric.MType == "" {
+		return ErrMetricTypeNotSpecified, http.StatusNotFound
+	}
+	if !metric.TypeIsValid() {
+		return ErrMetricTypeNotImplemented, http.StatusNotImplemented
+	}
+	if metric.ID == "" {
+		return ErrMetricNameNotSpecified, http.StatusNotFound
+	}
+	if requestType == "update" {
+		if metric.MType == "gauge" && metric.Value == nil {
+			if metric.Value == nil {
+				return ErrMetricValueNotSpecified, http.StatusNotFound
+			}
+		} else if metric.MType == "counter" && metric.Delta == nil {
+			return ErrMetricValueNotSpecified, http.StatusNotFound
 		}
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(allMetrics))
 	}
+	return nil, 0
 }
 
-func (a *api) updateGaugeHandler(newMetric *metric.Metrics, w http.ResponseWriter, r *http.Request) {
+func (a *api) updateGaugeMetric(newMetric *repo.Metrics, w http.ResponseWriter, r *http.Request) {
 
-	interfaceMForUpd, ok := a.service.MemStorage.Metrics.Load(newMetric.ID)
-	var mForUpd metric.Metrics
+	interfaceMForUpd, ok := a.service.MemStorage.Data.Load(newMetric.ID)
+	var mForUpd repo.Metrics
 	if !ok {
-		mForUpd = metric.Metrics{}
+		mForUpd = repo.Metrics{}
 		mForUpd.ID = newMetric.ID
 		mForUpd.MType = newMetric.MType
 		var value float64
 		mForUpd.Value = &value
 	} else {
-		mForUpd = interfaceMForUpd.(metric.Metrics)
+		mForUpd = interfaceMForUpd.(repo.Metrics)
 	}
 	*mForUpd.Value = *newMetric.Value
 
-	a.service.MemStorage.Metrics.Store(mForUpd.ID, mForUpd)
+	a.service.MemStorage.Data.Store(mForUpd.ID, mForUpd)
 
 	w.WriteHeader(http.StatusOK)
 }
 
-func (a *api) updateCounterHandler(newMetric *metric.Metrics, w http.ResponseWriter, r *http.Request) {
+func (a *api) updateCounterMetric(newMetric *repo.Metrics, w http.ResponseWriter, r *http.Request) {
 
-	interfaceMForUpd, ok := a.service.MemStorage.Metrics.Load(newMetric.ID)
-	var mForUpd metric.Metrics
+	interfaceMForUpd, ok := a.service.MemStorage.Data.Load(newMetric.ID)
+	var mForUpd repo.Metrics
 	if !ok {
-		mForUpd = metric.Metrics{}
+		mForUpd = repo.Metrics{}
 		mForUpd.ID = newMetric.ID
 		mForUpd.MType = newMetric.MType
 		var value int64
 		mForUpd.Delta = &value
 	} else {
-		mForUpd = interfaceMForUpd.(metric.Metrics)
+		mForUpd = interfaceMForUpd.(repo.Metrics)
 	}
 
 	*mForUpd.Delta += *newMetric.Delta
 
-	a.service.MemStorage.Metrics.Store(mForUpd.ID, mForUpd)
+	a.service.MemStorage.Data.Store(mForUpd.ID, mForUpd)
 
 	w.WriteHeader(http.StatusOK)
 }
 
-func fillMetricsForPage(dataForPage *[]string, metrics *metric.AllMetrics) {
+func (a *api) getPageHandler() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		dataForPage := service.NewDataForPage()
+		fillMetricsForPage(&dataForPage.Metrics, a.service.MemStorage.Data)
+		page, err := dataForPage.Page()
+		if err != nil {
+			log.Fatalln(err)
+		}
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.Write([]byte(page))
+	}
+}
+
+func fillMetricsForPage(dataForPage *[]string, metrics *repo.Data) {
 	*dataForPage = append(*dataForPage, sortedMetricsForPage(metrics)...)
 }
 
-func sortedMetricsForPage(metrics *metric.AllMetrics) []string {
+func sortedMetricsForPage(metrics *repo.Data) []string {
 	sortedMetrics := []string{}
 	metrics.Range(func(key, value any) bool {
-		currMetric := value.(metric.Metrics)
+		currMetric := value.(repo.Metrics)
 		if currMetric.MType == "gauge" {
 			sortedMetrics = append(sortedMetrics, currMetric.ID+": "+fmt.Sprintf("%f", *currMetric.Value))
 		} else if currMetric.MType == "counter" {
