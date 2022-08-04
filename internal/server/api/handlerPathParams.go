@@ -5,12 +5,12 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/v1tbrah/metricsAndAlerting/internal/server/repo"
+	"github.com/v1tbrah/metricsAndAlerting/pkg/metric"
 )
 
 func (a *api) updateMetricHandlerPathParams() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		metricFromRequest := &repo.Metrics{}
+		metricFromRequest := &metric.Metrics{}
 		if statusCode, err := fillMetricFromPathParams(metricFromRequest, "update", r.URL.Path); err != nil {
 			http.Error(w, err.Error(), statusCode)
 			return
@@ -30,7 +30,7 @@ func (a *api) updateMetricHandlerPathParams() http.HandlerFunc {
 
 func (a *api) getMetricValueHandlerPathParams() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		metricFromRequest := &repo.Metrics{}
+		metricFromRequest := &metric.Metrics{}
 		if statusCode, err := fillMetricFromPathParams(metricFromRequest, "value", r.URL.Path); err != nil {
 			http.Error(w, err.Error(), statusCode)
 			return
@@ -42,7 +42,7 @@ func (a *api) getMetricValueHandlerPathParams() http.HandlerFunc {
 			return
 		}
 
-		metricLocal := metricLocalInterface.(repo.Metrics)
+		metricLocal := metricLocalInterface.(metric.Metrics)
 		if metricFromRequest.MType == "gauge" {
 			w.Write([]byte(fmt.Sprintf("%v", *metricLocal.Value)))
 		} else if metricFromRequest.MType == "counter" {
@@ -51,7 +51,7 @@ func (a *api) getMetricValueHandlerPathParams() http.HandlerFunc {
 	}
 }
 
-func fillMetricFromPathParams(metric *repo.Metrics, handlerType, path string) (int, error) {
+func fillMetricFromPathParams(metric *metric.Metrics, handlerType, path string) (int, error) {
 	var pathInfo *pathInfo
 	if handlerType == "update" {
 		pathInfo = newInfoUpdateURL(path)
@@ -80,7 +80,7 @@ func fillMetricFromPathParams(metric *repo.Metrics, handlerType, path string) (i
 	return 0, nil
 }
 
-func fillMetricValueFromPathInfo(metric *repo.Metrics, pathInfo *pathInfo) (int, error) {
+func fillMetricValueFromPathInfo(metric *metric.Metrics, pathInfo *pathInfo) (int, error) {
 	if pathInfo.valM == "" {
 		return http.StatusNotFound, ErrMetricValueNotSpecified
 	}

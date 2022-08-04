@@ -9,14 +9,16 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/v1tbrah/metricsAndAlerting/internal/server/repo"
+	"github.com/v1tbrah/metricsAndAlerting/internal/server/config"
 	"github.com/v1tbrah/metricsAndAlerting/internal/server/repo/memory"
 	"github.com/v1tbrah/metricsAndAlerting/internal/server/service"
+	"github.com/v1tbrah/metricsAndAlerting/pkg/metric"
 )
 
 func TestUpdateHandler(t *testing.T) {
 
-	testAPI := NewAPI(service.NewService(memory.NewStorage()))
+	myCfg := config.NewCfg()
+	testAPI := NewAPI(service.NewService(memory.NewStorage(), myCfg))
 
 	localHost := "http://127.0.0.1:8080"
 
@@ -123,7 +125,7 @@ func TestUpdateHandler(t *testing.T) {
 func updateBody(MName, MType string, Value float64, Delta int64) *bytes.Buffer {
 	allocValue := Value
 	deltaValue := Delta
-	metricForBody := repo.Metrics{
+	metricForBody := metric.Metrics{
 		ID:    MName,
 		MType: MType,
 		Delta: &deltaValue,
@@ -137,11 +139,12 @@ func TestGetValueHandler(t *testing.T) {
 
 	localHost := "http://127.0.0.1:8080"
 
-	testAPI := NewAPI(service.NewService(memory.NewStorage()))
+	myCfg := config.NewCfg()
+	testAPI := NewAPI(service.NewService(memory.NewStorage(), myCfg))
 
 	gaugeValue := 2.22
-	testAPIWithAllocMetric := NewAPI(service.NewService(memory.NewStorage()))
-	testAPIWithAllocMetric.service.MemStorage.Data.Store("Alloc", &repo.Metrics{
+	testAPIWithAllocMetric := NewAPI(service.NewService(memory.NewStorage(), myCfg))
+	testAPIWithAllocMetric.service.MemStorage.Data.Store("Alloc", &metric.Metrics{
 		ID:    "Alloc",
 		MType: "gauge",
 		Delta: nil,
@@ -149,8 +152,8 @@ func TestGetValueHandler(t *testing.T) {
 	})
 
 	counterValue := int64(2)
-	testAPIWithCounterMetric := NewAPI(service.NewService(memory.NewStorage()))
-	testAPIWithCounterMetric.service.MemStorage.Data.Store("PollCount", &repo.Metrics{
+	testAPIWithCounterMetric := NewAPI(service.NewService(memory.NewStorage(), myCfg))
+	testAPIWithCounterMetric.service.MemStorage.Data.Store("PollCount", &metric.Metrics{
 		ID:    "PollCount",
 		MType: "counter",
 		Delta: &counterValue,
@@ -245,7 +248,7 @@ func TestGetValueHandler(t *testing.T) {
 }
 
 func getBody(MName, MType string) *bytes.Buffer {
-	metricForBody := repo.Metrics{
+	metricForBody := metric.Metrics{
 		ID:    MName,
 		MType: MType,
 	}

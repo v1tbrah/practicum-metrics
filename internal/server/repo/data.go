@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"sync"
+
+	"github.com/v1tbrah/metricsAndAlerting/pkg/metric"
 )
 
 type Data struct {
@@ -16,7 +18,7 @@ func NewData() *Data {
 }
 
 func (d *Data) MarshalJSON() ([]byte, error) {
-	dataMetrics := make(map[string]Metrics)
+	dataMetrics := make(map[string]metric.Metrics)
 	metricsConverted := true
 	d.Range(func(key, value interface{}) bool {
 		metricName, ok := key.(string)
@@ -24,7 +26,7 @@ func (d *Data) MarshalJSON() ([]byte, error) {
 			metricsConverted = false
 			return false
 		}
-		metricValue, ok := value.(Metrics)
+		metricValue, ok := value.(metric.Metrics)
 		if !ok {
 			metricsConverted = false
 			return false
@@ -44,7 +46,7 @@ func (d *Data) MarshalJSON() ([]byte, error) {
 }
 
 func (d *Data) UnmarshalJSON(data []byte) error {
-	tmpMetrics := map[string]Metrics{}
+	tmpMetrics := map[string]metric.Metrics{}
 	if err := json.Unmarshal(data, &tmpMetrics); err != nil {
 		return err
 	}

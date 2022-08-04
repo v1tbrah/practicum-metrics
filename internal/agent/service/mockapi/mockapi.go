@@ -15,10 +15,10 @@ import (
 
 type MockAPI struct {
 	Server *httptest.Server
-	Data   memory.Data
+	Data   *memory.Data
 }
 
-func NewAPI(addr string, data memory.Data) *MockAPI {
+func NewAPI(addr string, data *memory.Data) *MockAPI {
 	return &MockAPI{
 		Server: newServer(addr),
 		Data:   data,

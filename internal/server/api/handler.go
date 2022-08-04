@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+
 	"io"
 	"log"
 	"net/http"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/v1tbrah/metricsAndAlerting/internal/server/repo"
 	"github.com/v1tbrah/metricsAndAlerting/internal/server/service"
+	"github.com/v1tbrah/metricsAndAlerting/pkg/metric"
 )
 
 var (
@@ -22,7 +24,7 @@ var (
 )
 
 func (a *api) updateMetricHandler(w http.ResponseWriter, r *http.Request) {
-	metricFromRequest := &repo.Metrics{}
+	metricFromRequest := &metric.Metrics{}
 	if statusCode, err := fillMetricFromRequestBody(metricFromRequest, r.Body); err != nil {
 		http.Error(w, err.Error(), statusCode)
 		return
@@ -44,7 +46,7 @@ func (a *api) updateMetricHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *api) getMetricValueHandler(w http.ResponseWriter, r *http.Request) {
-	metricFromRequest := &repo.Metrics{}
+	metricFromRequest := &metric.Metrics{}
 	if statusCode, err := fillMetricFromRequestBody(metricFromRequest, r.Body); err != nil {
 		http.Error(w, err.Error(), statusCode)
 		return
@@ -64,7 +66,7 @@ func (a *api) getMetricValueHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(resp)
 }
 
-func fillMetricFromRequestBody(metric *repo.Metrics, requestBody io.ReadCloser) (int, error) {
+func fillMetricFromRequestBody(metric *metric.Metrics, requestBody io.ReadCloser) (int, error) {
 	body, err := io.ReadAll(requestBody)
 	if err != nil && err != io.EOF {
 		return http.StatusBadRequest, errors.New("err body reading")
@@ -75,7 +77,7 @@ func fillMetricFromRequestBody(metric *repo.Metrics, requestBody io.ReadCloser) 
 	return 0, nil
 }
 
-func checkValidMetricFromRequest(metric *repo.Metrics, requestType string) (int, error) {
+func checkValidMetricFromRequest(metric *metric.Metrics, requestType string) (int, error) {
 	if metric.MType == "" {
 		return http.StatusNotFound, ErrMetricTypeNotSpecified
 	}
@@ -97,18 +99,18 @@ func checkValidMetricFromRequest(metric *repo.Metrics, requestType string) (int,
 	return 0, nil
 }
 
-func (a *api) updateGaugeMetric(newMetric *repo.Metrics, w http.ResponseWriter, r *http.Request) {
+func (a *api) updateGaugeMetric(newMetric *metric.Metrics, w http.ResponseWriter, r *http.Request) {
 
 	interfaceMForUpd, ok := a.service.MemStorage.Data.Load(newMetric.ID)
-	var mForUpd repo.Metrics
+	var mForUpd metric.Metrics
 	if !ok {
-		mForUpd = repo.Metrics{}
+		mForUpd = metric.Metrics{}
 		mForUpd.ID = newMetric.ID
 		mForUpd.MType = newMetric.MType
 		var value float64
 		mForUpd.Value = &value
 	} else {
-		mForUpd = interfaceMForUpd.(repo.Metrics)
+		mForUpd = interfaceMForUpd.(metric.Metrics)
 	}
 	*mForUpd.Value = *newMetric.Value
 
@@ -117,18 +119,18 @@ func (a *api) updateGaugeMetric(newMetric *repo.Metrics, w http.ResponseWriter, 
 	w.WriteHeader(http.StatusOK)
 }
 
-func (a *api) updateCounterMetric(newMetric *repo.Metrics, w http.ResponseWriter, r *http.Request) {
+func (a *api) updateCounterMetric(newMetric *metric.Metrics, w http.ResponseWriter, r *http.Request) {
 
 	interfaceMForUpd, ok := a.service.MemStorage.Data.Load(newMetric.ID)
-	var mForUpd repo.Metrics
+	var mForUpd metric.Metrics
 	if !ok {
-		mForUpd = repo.Metrics{}
+		mForUpd = metric.Metrics{}
 		mForUpd.ID = newMetric.ID
 		mForUpd.MType = newMetric.MType
 		var value int64
 		mForUpd.Delta = &value
 	} else {
-		mForUpd = interfaceMForUpd.(repo.Metrics)
+		mForUpd = interfaceMForUpd.(metric.Metrics)
 	}
 
 	*mForUpd.Delta += *newMetric.Delta
@@ -158,7 +160,7 @@ func fillMetricsForPage(dataForPage *[]string, metrics *repo.Data) {
 func sortedMetricsForPage(metrics *repo.Data) []string {
 	sortedMetrics := []string{}
 	metrics.Range(func(key, value any) bool {
-		currMetric := value.(repo.Metrics)
+		currMetric := value.(metric.Metrics)
 		if currMetric.MType == "gauge" {
 			sortedMetrics = append(sortedMetrics, currMetric.ID+": "+fmt.Sprintf("%f", *currMetric.Value))
 		} else if currMetric.MType == "counter" {

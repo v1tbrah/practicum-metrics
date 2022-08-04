@@ -7,14 +7,16 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/v1tbrah/metricsAndAlerting/internal/agent/config"
 	"github.com/v1tbrah/metricsAndAlerting/internal/agent/service/mockapi"
 )
 
 func Test_service_reportMetric(t *testing.T) {
 
-	myService := NewService()
+	cfg := config.NewCfg()
+	myService := NewService(cfg)
 
-	API := mockapi.NewAPI(myService.options.ServerAddr, *myService.data)
+	API := mockapi.NewAPI(myService.cfg.ServerAddr, myService.data)
 	defer API.Server.Close()
 
 	tests := []struct {
@@ -38,7 +40,7 @@ func Test_service_reportMetric(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			serviceData := *myService.data
+			serviceData := myService.data.Metrics
 			resp, err := myService.reportMetric(serviceData[tt.MID])
 			if tt.wantErr {
 				require.NotNil(t, err)
@@ -52,9 +54,10 @@ func Test_service_reportMetric(t *testing.T) {
 
 func Test_service_getMetric(t *testing.T) {
 
-	myService := NewService()
+	cfg := config.NewCfg()
+	myService := NewService(cfg)
 
-	API := mockapi.NewAPI(myService.options.ServerAddr, *myService.data)
+	API := mockapi.NewAPI(myService.cfg.ServerAddr, myService.data)
 	defer API.Server.Close()
 
 	tests := []struct {

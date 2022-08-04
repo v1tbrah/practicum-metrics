@@ -5,62 +5,73 @@ import (
 	"math/rand"
 	"reflect"
 	"runtime"
+	"sync"
 	"time"
+
+	"github.com/v1tbrah/metricsAndAlerting/pkg/metric"
 )
 
-type Data map[string]Metrics
+type Data struct {
+	Metrics map[string]metric.Metrics
+	sync.Mutex
+}
 
 // NewData returns all metrics.
 func NewData() *Data {
 	return &Data{
-		"Alloc":         NewMetric("Alloc", "gauge"),
-		"BuckHashSys":   NewMetric("BuckHashSys", "gauge"),
-		"Frees":         NewMetric("Frees", "gauge"),
-		"GCCPUFraction": NewMetric("GCCPUFraction", "gauge"),
-		"GCSys":         NewMetric("GCSys", "gauge"),
-		"HeapAlloc":     NewMetric("HeapAlloc", "gauge"),
-		"HeapIdle":      NewMetric("HeapIdle", "gauge"),
-		"HeapInuse":     NewMetric("HeapInuse", "gauge"),
-		"HeapObjects":   NewMetric("HeapObjects", "gauge"),
-		"HeapReleased":  NewMetric("HeapReleased", "gauge"),
-		"HeapSys":       NewMetric("HeapSys", "gauge"),
-		"LastGC":        NewMetric("LastGC", "gauge"),
-		"Lookups":       NewMetric("Lookups", "gauge"),
-		"MCacheInuse":   NewMetric("MCacheInuse", "gauge"),
-		"MCacheSys":     NewMetric("MCacheSys", "gauge"),
-		"MSpanInuse":    NewMetric("MSpanInuse", "gauge"),
-		"MSpanSys":      NewMetric("MSpanSys", "gauge"),
-		"Mallocs":       NewMetric("Mallocs", "gauge"),
-		"NextGC":        NewMetric("NextGC", "gauge"),
-		"NumForcedGC":   NewMetric("NumForcedGC", "gauge"),
-		"NumGC":         NewMetric("NumGC", "gauge"),
-		"OtherSys":      NewMetric("OtherSys", "gauge"),
-		"PauseTotalNs":  NewMetric("PauseTotalNs", "gauge"),
-		"StackInuse":    NewMetric("StackInuse", "gauge"),
-		"StackSys":      NewMetric("StackSys", "gauge"),
-		"Sys":           NewMetric("Sys", "gauge"),
-		"TotalAlloc":    NewMetric("TotalAlloc", "gauge"),
-		"PollCount":     NewMetric("PollCount", "counter"),
-		"RandomValue":   NewMetric("RandomValue", "gauge"),
+		Metrics: map[string]metric.Metrics{
+			"Alloc":         metric.NewMetric("Alloc", "gauge"),
+			"BuckHashSys":   metric.NewMetric("BuckHashSys", "gauge"),
+			"Frees":         metric.NewMetric("Frees", "gauge"),
+			"GCCPUFraction": metric.NewMetric("GCCPUFraction", "gauge"),
+			"GCSys":         metric.NewMetric("GCSys", "gauge"),
+			"HeapAlloc":     metric.NewMetric("HeapAlloc", "gauge"),
+			"HeapIdle":      metric.NewMetric("HeapIdle", "gauge"),
+			"HeapInuse":     metric.NewMetric("HeapInuse", "gauge"),
+			"HeapObjects":   metric.NewMetric("HeapObjects", "gauge"),
+			"HeapReleased":  metric.NewMetric("HeapReleased", "gauge"),
+			"HeapSys":       metric.NewMetric("HeapSys", "gauge"),
+			"LastGC":        metric.NewMetric("LastGC", "gauge"),
+			"Lookups":       metric.NewMetric("Lookups", "gauge"),
+			"MCacheInuse":   metric.NewMetric("MCacheInuse", "gauge"),
+			"MCacheSys":     metric.NewMetric("MCacheSys", "gauge"),
+			"MSpanInuse":    metric.NewMetric("MSpanInuse", "gauge"),
+			"MSpanSys":      metric.NewMetric("MSpanSys", "gauge"),
+			"Mallocs":       metric.NewMetric("Mallocs", "gauge"),
+			"NextGC":        metric.NewMetric("NextGC", "gauge"),
+			"NumForcedGC":   metric.NewMetric("NumForcedGC", "gauge"),
+			"NumGC":         metric.NewMetric("NumGC", "gauge"),
+			"OtherSys":      metric.NewMetric("OtherSys", "gauge"),
+			"PauseTotalNs":  metric.NewMetric("PauseTotalNs", "gauge"),
+			"StackInuse":    metric.NewMetric("StackInuse", "gauge"),
+			"StackSys":      metric.NewMetric("StackSys", "gauge"),
+			"Sys":           metric.NewMetric("Sys", "gauge"),
+			"TotalAlloc":    metric.NewMetric("TotalAlloc", "gauge"),
+			"PollCount":     metric.NewMetric("PollCount", "counter"),
+			"RandomValue":   metric.NewMetric("RandomValue", "gauge"),
+		},
 	}
 }
 
 // Update updates all metrics.
-func (m *Data) Update() {
-	m.updateGaugeMetrics()
-	m.updateCounterMetrics()
+func (d *Data) Update() {
+	d.Lock()
+	defer d.Unlock()
+	d.updateGaugeMetrics()
+	d.updateCounterMetrics()
+	log.Println("All metrics updated.")
 }
 
-func (m *Data) updateGaugeMetrics() {
-	metricsToUpdate := *m
+func (d *Data) updateGaugeMetrics() {
+	metricsToUpdate := d.Metrics
 
 	runtimeStats := runtime.MemStats{}
 	runtime.ReadMemStats(&runtimeStats)
 
 	reflectStats := reflect.ValueOf(runtimeStats)
 
-	for name, metric := range metricsToUpdate {
-		if metric.MType != "gauge" {
+	for name, currMetric := range metricsToUpdate {
+		if currMetric.MType != "gauge" {
 			continue
 		}
 		reflectStatField := reflectStats.FieldByName(name)
@@ -84,13 +95,13 @@ func (m *Data) updateGaugeMetrics() {
 		default:
 			log.Fatalln("unsupported metric type")
 		}
-		metric.Value = &valueForUpd
-		metricsToUpdate[name] = metric
+		currMetric.Value = &valueForUpd
+		metricsToUpdate[name] = currMetric
 	}
 }
 
-func (m *Data) updateCounterMetrics() {
-	metricsToUpdate := *m
+func (d *Data) updateCounterMetrics() {
+	metricsToUpdate := d.Metrics
 
 	RandomValue := metricsToUpdate["RandomValue"]
 	rand.Seed(time.Now().UnixNano())
