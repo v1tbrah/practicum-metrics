@@ -2,14 +2,14 @@ package api
 
 import "strings"
 
-type infoURL struct {
+type pathInfo struct {
 	typeM string
 	nameM string
 	valM  string
 }
 
-func newInfoUpdateURL(urlPath string) *infoURL {
-	newInfoM := infoURL{}
+func newInfoUpdateURL(urlPath string) *pathInfo {
+	newInfoM := pathInfo{}
 	arrInfoM := strings.Split(strings.TrimPrefix(urlPath, "/update/"), "/")
 	lenArrInfoM := len(arrInfoM)
 	if lenArrInfoM > 0 {
@@ -24,8 +24,8 @@ func newInfoUpdateURL(urlPath string) *infoURL {
 	return &newInfoM
 }
 
-func newInfoGetValueURL(urlPath string) *infoURL {
-	newInfoM := infoURL{}
+func newInfoGetValueURL(urlPath string) *pathInfo {
+	newInfoM := pathInfo{}
 	arrInfoM := strings.Split(strings.TrimPrefix(urlPath, "/value/"), "/")
 	lenArrInfoM := len(arrInfoM)
 	if lenArrInfoM > 0 {

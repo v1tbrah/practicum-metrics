@@ -1,14 +1,14 @@
 package memory
 
 import (
-	"github.com/v1tbrah/metricsAndAlerting/internal/server/repo/metric"
+	"github.com/v1tbrah/metricsAndAlerting/internal/server/repo"
 )
 
-type MemStorage struct {
-	Metrics *metric.Metrics
+type Storage struct {
+	Data *repo.Data
 }
 
-// Creates an MemStorage.
-func NewMemStorage() *MemStorage {
-	return &MemStorage{Metrics: metric.NewMetrics()}
+// NewStorage returns new memory storage.
+func NewStorage() *Storage {
+	return &Storage{Data: repo.NewData()}
 }
