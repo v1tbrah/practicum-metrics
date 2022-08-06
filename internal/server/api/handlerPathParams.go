@@ -2,6 +2,7 @@ package api
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -87,12 +88,14 @@ func fillMetricValueFromPathInfo(metric *metric.Metrics, pathInfo *pathInfo) (in
 	if metric.MType == "gauge" {
 		value, err := strconv.ParseFloat(pathInfo.valM, 64)
 		if err != nil {
+			log.Println("ВОТ ЗДЕСЬ #3 ВЕРНУЛСЯ", err)
 			return http.StatusBadRequest, err
 		}
 		metric.Value = &value
 	} else if metric.MType == "counter" {
 		value, err := strconv.Atoi(pathInfo.valM)
 		if err != nil {
+			log.Println("ВОТ ЗДЕСЬ #4 ВЕРНУЛСЯ", err)
 			return http.StatusBadRequest, err
 		}
 		valueInt64 := int64(value)
