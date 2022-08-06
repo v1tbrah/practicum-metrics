@@ -23,7 +23,6 @@ var (
 )
 
 func (a *api) updateMetricHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", r.Header.Get("Content-Type"))
 
 	metricFromRequest := &metric.Metrics{}
 	if statusCode, err := fillMetricFromRequestBody(metricFromRequest, r.Body); err != nil {
@@ -47,8 +46,6 @@ func (a *api) updateMetricHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *api) getMetricValueHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", r.Header.Get("Content-Type"))
-
 	metricFromRequest := &metric.Metrics{}
 	if statusCode, err := fillMetricFromRequestBody(metricFromRequest, r.Body); err != nil {
 		http.Error(w, err.Error(), statusCode)
@@ -72,16 +69,19 @@ func (a *api) getMetricValueHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp, _ := json.Marshal(metricForResponse)
+	w.Header().Set("Content-Type", "application/json")
 	w.Write(resp)
 }
 
 func fillMetricFromRequestBody(metric *metric.Metrics, requestBody io.ReadCloser) (int, error) {
 	body, err := io.ReadAll(requestBody)
 	if err != nil && err != io.EOF {
-		return http.StatusBadRequest, errors.New("err body reading")
+		log.Println(err)
+		return http.StatusBadRequest, err
 	}
 	if err = json.Unmarshal(body, metric); err != nil {
-		return http.StatusBadRequest, errors.New("invalid json")
+		log.Println(err)
+		return http.StatusBadRequest, err
 	}
 	return 0, nil
 }
@@ -141,6 +141,7 @@ func (a *api) updateGaugeMetric(newMetric *metric.Metrics, w http.ResponseWriter
 	}
 
 	resp, _ := json.Marshal(metricForUpd)
+	w.Header().Set("Content-Type", "application/json")
 	w.Write(resp)
 }
 
@@ -169,6 +170,7 @@ func (a *api) updateCounterMetric(newMetric *metric.Metrics, w http.ResponseWrit
 	}
 
 	resp, _ := json.Marshal(metricForUpd)
+	w.Header().Set("Content-Type", "application/json")
 	w.Write(resp)
 }
 
