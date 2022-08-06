@@ -92,6 +92,7 @@ func (d *Data) updateGaugeMetrics(keyForUpdateHash string) {
 		case uint8:
 			valueForUpd = float64(statValue)
 		default:
+			log.Println("unsupported metric type")
 			log.Fatalln("unsupported metric type")
 		}
 		currMetric.Value = &valueForUpd
