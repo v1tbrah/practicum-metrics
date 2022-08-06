@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"sort"
+	"strings"
 
 	"github.com/v1tbrah/metricsAndAlerting/internal/server/repo"
 	"github.com/v1tbrah/metricsAndAlerting/internal/server/service"
@@ -109,8 +110,9 @@ func (a *api) checkValidMetricFromRequest(metric *metric.Metrics, requestType st
 		hashFromRequest := metric.Hash
 		metric.UpdateHash(a.service.Cfg.Key)
 		newHash := metric.Hash
-		if hashFromRequest != newHash {
-			log.Println("ВОТ ЗДЕСЬ #5(hash) ВЕРНУЛСЯ")
+		if !strings.EqualFold(hashFromRequest, newHash) {
+			log.Println("key -", a.service.Cfg.Key)
+			log.Println("hash from request:", hashFromRequest, "new hash:", newHash)
 			return http.StatusBadRequest, errors.New("invalid hash")
 		}
 	}
