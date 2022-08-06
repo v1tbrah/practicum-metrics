@@ -69,7 +69,6 @@ func (a *api) getMetricValueHandler(w http.ResponseWriter, r *http.Request) {
 
 	resp, _ := json.Marshal(metricForResponse)
 	w.Header().Set("Content-Type", r.Header.Get("Content-Type"))
-	w.WriteHeader(http.StatusOK)
 	w.Write(resp)
 }
 
@@ -140,7 +139,6 @@ func (a *api) updateGaugeMetric(newMetric *metric.Metrics, w http.ResponseWriter
 
 	resp, _ := json.Marshal(metricForUpd)
 	w.Header().Set("Content-Type", r.Header.Get("Content-Type"))
-	w.WriteHeader(http.StatusOK)
 	w.Write(resp)
 }
 
@@ -170,7 +168,6 @@ func (a *api) updateCounterMetric(newMetric *metric.Metrics, w http.ResponseWrit
 
 	resp, _ := json.Marshal(metricForUpd)
 	w.Header().Set("Content-Type", r.Header.Get("Content-Type"))
-	w.WriteHeader(http.StatusOK)
 	w.Write(resp)
 }
 
