@@ -115,8 +115,3 @@ func (s *service) getMetric(ID, MType string) (*resty.Response, error) {
 
 	return resp, err
 }
-
-func (s *service) hashMetric(valForHash, keyForHash string) string {
-
-	return ""
-}

@@ -36,13 +36,12 @@ func (a *api) getMetricValueHandlerPathParams() http.HandlerFunc {
 			return
 		}
 
-		metricLocalInterface, ok := a.service.MemStorage.Data.Load(metricFromRequest.ID)
+		metricLocal, ok := a.service.MemStorage.Data.Metrics[metricFromRequest.ID]
 		if !ok {
 			http.Error(w, ErrMetricNotFound.Error(), http.StatusNotFound)
 			return
 		}
 
-		metricLocal := metricLocalInterface.(*metric.Metrics)
 		if metricFromRequest.MType == "gauge" {
 			w.Write([]byte(fmt.Sprintf("%v", *metricLocal.Value)))
 		} else if metricFromRequest.MType == "counter" {

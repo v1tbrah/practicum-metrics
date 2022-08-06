@@ -2,43 +2,23 @@ package repo
 
 import (
 	"encoding/json"
-	"errors"
 	"sync"
 
 	"github.com/v1tbrah/metricsAndAlerting/pkg/metric"
 )
 
 type Data struct {
-	sync.Map
+	Metrics map[string]metric.Metrics
+	sync.Mutex
 }
 
 // NewData returns new data.
 func NewData() *Data {
-	return &Data{}
+	return &Data{Metrics: map[string]metric.Metrics{}}
 }
 
 func (d *Data) MarshalJSON() ([]byte, error) {
-	dataMetrics := make(map[string]metric.Metrics)
-	metricsConverted := true
-	d.Range(func(key, value interface{}) bool {
-		metricName, ok := key.(string)
-		if !ok {
-			metricsConverted = false
-			return false
-		}
-		metricValue, ok := value.(metric.Metrics)
-		if !ok {
-			metricsConverted = false
-			return false
-		}
-		dataMetrics[metricName] = metricValue
-		return true
-	})
-	if !metricsConverted {
-		errText := "error converting metrics to json"
-		return nil, errors.New(errText)
-	}
-	jsonMetrics, err := json.Marshal(&dataMetrics)
+	jsonMetrics, err := json.Marshal(d.Metrics)
 	if err != nil {
 		return nil, err
 	}
@@ -46,12 +26,8 @@ func (d *Data) MarshalJSON() ([]byte, error) {
 }
 
 func (d *Data) UnmarshalJSON(data []byte) error {
-	tmpMetrics := map[string]metric.Metrics{}
-	if err := json.Unmarshal(data, &tmpMetrics); err != nil {
+	if err := json.Unmarshal(data, &d.Metrics); err != nil {
 		return err
-	}
-	for key, value := range tmpMetrics {
-		d.Store(key, value)
 	}
 	return nil
 }

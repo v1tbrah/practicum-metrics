@@ -54,13 +54,12 @@ func (a *api) getMetricValueHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	metricInterface, ok := a.service.MemStorage.Data.Load(metricFromRequest.ID)
+	metricForResponse, ok := a.service.MemStorage.Data.Metrics[metricFromRequest.ID]
 	if !ok {
 		http.Error(w, ErrMetricNotFound.Error(), http.StatusNotFound)
 		return
 	}
 
-	metricForResponse := metricInterface.(metric.Metrics)
 	if a.service.Cfg.Key != "" {
 		if err := metricForResponse.UpdateHash(a.service.Cfg.Key); err != nil {
 			log.Println(err)
@@ -69,6 +68,7 @@ func (a *api) getMetricValueHandler(w http.ResponseWriter, r *http.Request) {
 
 	resp, _ := json.Marshal(metricForResponse)
 	w.Header().Set("Content-Type", r.Header.Get("Content-Type"))
+	w.WriteHeader(http.StatusOK)
 	w.Write(resp)
 }
 
@@ -118,58 +118,60 @@ func (a *api) checkValidMetricFromRequest(metric *metric.Metrics, requestType st
 
 func (a *api) updateGaugeMetric(newMetric *metric.Metrics, w http.ResponseWriter, r *http.Request) {
 
-	interfaceMForUpd, ok := a.service.MemStorage.Data.Load(newMetric.ID)
-	var mForUpd metric.Metrics
-	if !ok {
-		mForUpd = metric.Metrics{}
-		mForUpd.ID = newMetric.ID
-		mForUpd.MType = newMetric.MType
-		var value float64
-		mForUpd.Value = &value
-	} else {
-		mForUpd = interfaceMForUpd.(metric.Metrics)
-	}
-	*mForUpd.Value = *newMetric.Value
+	a.service.MemStorage.Data.Lock()
+	defer a.service.MemStorage.Data.Unlock()
 
-	a.service.MemStorage.Data.Store(mForUpd.ID, mForUpd)
+	metricForUpd, ok := a.service.MemStorage.Data.Metrics[newMetric.ID]
+	if !ok {
+		metricForUpd = metric.Metrics{}
+		metricForUpd.ID = newMetric.ID
+		metricForUpd.MType = newMetric.MType
+		var value float64
+		metricForUpd.Value = &value
+	}
+	*metricForUpd.Value = *newMetric.Value
+
+	a.service.MemStorage.Data.Metrics[metricForUpd.ID] = metricForUpd
 
 	if a.service.Cfg.Key != "" {
-		if err := mForUpd.UpdateHash(a.service.Cfg.Key); err != nil {
+		if err := metricForUpd.UpdateHash(a.service.Cfg.Key); err != nil {
 			log.Println(err)
 		}
 	}
 
-	resp, _ := json.Marshal(mForUpd)
+	resp, _ := json.Marshal(metricForUpd)
 	w.Header().Set("Content-Type", r.Header.Get("Content-Type"))
+	w.WriteHeader(http.StatusOK)
 	w.Write(resp)
 }
 
 func (a *api) updateCounterMetric(newMetric *metric.Metrics, w http.ResponseWriter, r *http.Request) {
 
-	interfaceMForUpd, ok := a.service.MemStorage.Data.Load(newMetric.ID)
-	var mForUpd metric.Metrics
+	a.service.MemStorage.Data.Lock()
+	defer a.service.MemStorage.Data.Unlock()
+
+	metricForUpd, ok := a.service.MemStorage.Data.Metrics[newMetric.ID]
 	if !ok {
-		mForUpd = metric.Metrics{}
-		mForUpd.ID = newMetric.ID
-		mForUpd.MType = newMetric.MType
+		metricForUpd = metric.Metrics{}
+		metricForUpd.ID = newMetric.ID
+		metricForUpd.MType = newMetric.MType
 		var value int64
-		mForUpd.Delta = &value
-	} else {
-		mForUpd = interfaceMForUpd.(metric.Metrics)
+		metricForUpd.Delta = &value
 	}
 
-	*mForUpd.Delta += *newMetric.Delta
+	*metricForUpd.Delta += *newMetric.Delta
 
-	a.service.MemStorage.Data.Store(mForUpd.ID, mForUpd)
+	a.service.MemStorage.Data.Metrics[metricForUpd.ID] = metricForUpd
 
 	if a.service.Cfg.Key != "" {
-		if err := mForUpd.UpdateHash(a.service.Cfg.Key); err != nil {
+		if err := metricForUpd.UpdateHash(a.service.Cfg.Key); err != nil {
 			log.Println(err)
 		}
 	}
 
-	resp, _ := json.Marshal(mForUpd)
+	resp, _ := json.Marshal(metricForUpd)
 	w.Header().Set("Content-Type", r.Header.Get("Content-Type"))
+	w.WriteHeader(http.StatusOK)
 	w.Write(resp)
 }
 
@@ -192,15 +194,13 @@ func fillMetricsForPage(dataForPage *[]string, metrics *repo.Data) {
 
 func sortedMetricsForPage(metrics *repo.Data) []string {
 	sortedMetrics := []string{}
-	metrics.Range(func(key, value any) bool {
-		currMetric := value.(metric.Metrics)
+	for _, currMetric := range metrics.Metrics {
 		if currMetric.MType == "gauge" {
 			sortedMetrics = append(sortedMetrics, currMetric.ID+": "+fmt.Sprintf("%f", *currMetric.Value))
 		} else if currMetric.MType == "counter" {
 			sortedMetrics = append(sortedMetrics, currMetric.ID+": "+fmt.Sprintf("%v", *currMetric.Delta))
 		}
-		return true
-	})
+	}
 
 	sort.Slice(sortedMetrics, func(i, j int) bool { return sortedMetrics[i] < sortedMetrics[j] })
 	return sortedMetrics
