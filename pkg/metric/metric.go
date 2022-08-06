@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
+	"log"
 )
 
 var (
@@ -43,6 +44,7 @@ func (m *Metrics) TypeIsValid() bool {
 
 func (m *Metrics) UpdateHash(keyForUpdate string) error {
 
+	log.Println("ID:", m.ID, "Type:", m.MType, "value:", m.Value, "delta:", m.Delta)
 	if keyForUpdate == "" {
 		return ErrKeyForUpdateHashIsEmpty
 	}
