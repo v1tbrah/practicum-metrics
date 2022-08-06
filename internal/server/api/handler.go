@@ -4,13 +4,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/v1tbrah/metricsAndAlerting/internal/server/repo"
-	"github.com/v1tbrah/metricsAndAlerting/internal/server/service"
-	"github.com/v1tbrah/metricsAndAlerting/pkg/metric"
 	"io"
 	"log"
 	"net/http"
 	"sort"
+
+	"github.com/v1tbrah/metricsAndAlerting/internal/server/repo"
+	"github.com/v1tbrah/metricsAndAlerting/internal/server/service"
+	"github.com/v1tbrah/metricsAndAlerting/pkg/metric"
 )
 
 var (
@@ -100,14 +101,6 @@ func (a *api) checkValidMetricFromRequest(metric *metric.Metrics, requestType st
 		} else if metric.MType == "counter" && metric.Delta == nil {
 			return http.StatusNotFound, ErrMetricValueNotSpecified
 		}
-		//if a.service.Cfg.Key != "" {
-		//	hashFromRequest := metric.Hash
-		//	metric.UpdateHash(a.service.Cfg.Key)
-		//	newHash := metric.Hash
-		//	if hashFromRequest != newHash {
-		//		return http.StatusBadRequest, errors.New("invalid hash")
-		//	}
-		//}
 	}
 
 	return 0, nil
