@@ -11,7 +11,6 @@ import (
 	"log"
 	"net/http"
 	"sort"
-	"strings"
 )
 
 var (
@@ -109,8 +108,8 @@ func (a *api) checkValidMetricFromRequest(metric *metric.Metrics, requestType st
 		hashFromRequest := metric.Hash
 		metric.UpdateHash(a.service.Cfg.Key)
 		newHash := metric.Hash
-		if !strings.EqualFold(hashFromRequest, newHash) {
-			return http.StatusNotFound, errors.New("invalid hash")
+		if hashFromRequest != newHash {
+			return http.StatusBadRequest, errors.New("invalid hash")
 		}
 	}
 

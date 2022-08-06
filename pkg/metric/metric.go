@@ -59,8 +59,7 @@ func (m *Metrics) UpdateHash(keyForUpdate string) error {
 
 	h := hmac.New(sha256.New, []byte(keyForUpdate))
 	h.Write([]byte(valueForHash))
-	sign := h.Sum(nil)
-	m.Hash = string(sign)
+	m.Hash = fmt.Sprintf("%x", h.Sum(nil))
 
 	return nil
 }

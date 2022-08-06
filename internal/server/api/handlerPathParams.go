@@ -42,7 +42,7 @@ func (a *api) getMetricValueHandlerPathParams() http.HandlerFunc {
 			return
 		}
 
-		metricLocal := metricLocalInterface.(metric.Metrics)
+		metricLocal := metricLocalInterface.(*metric.Metrics)
 		if metricFromRequest.MType == "gauge" {
 			w.Write([]byte(fmt.Sprintf("%v", *metricLocal.Value)))
 		} else if metricFromRequest.MType == "counter" {
