@@ -103,18 +103,17 @@ func (a *api) checkValidMetricFromRequest(metric *metric.Metrics, requestType st
 		} else if metric.MType == "counter" && metric.Delta == nil {
 			return http.StatusNotFound, ErrMetricValueNotSpecified
 		}
-	}
-
-	if a.service.Cfg.Key != "" {
-		hashFromRequest := metric.Hash
-		metric.UpdateHash(a.service.Cfg.Key)
-		newHash := metric.Hash
-		if hashFromRequest != newHash {
-			log.Println("MType", metric.MType, "value", metric.Value, "delta", metric.Delta)
-			log.Println("type - ", requestType)
-			log.Println("key -", a.service.Cfg.Key)
-			log.Println("hash from request:", hashFromRequest, "new hash:", newHash)
-			return http.StatusBadRequest, errors.New("invalid hash")
+		if a.service.Cfg.Key != "" {
+			hashFromRequest := metric.Hash
+			metric.UpdateHash(a.service.Cfg.Key)
+			newHash := metric.Hash
+			if hashFromRequest != newHash {
+				log.Println("MType", metric.MType, "value", metric.Value, "delta", metric.Delta)
+				log.Println("type - ", requestType)
+				log.Println("key -", a.service.Cfg.Key)
+				log.Println("hash from request:", hashFromRequest, "new hash:", newHash)
+				return http.StatusBadRequest, errors.New("invalid hash")
+			}
 		}
 	}
 
