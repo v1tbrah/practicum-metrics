@@ -4,13 +4,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/v1tbrah/metricsAndAlerting/internal/server/repo"
-	"github.com/v1tbrah/metricsAndAlerting/internal/server/service"
-	"github.com/v1tbrah/metricsAndAlerting/pkg/metric"
 	"io"
 	"log"
 	"net/http"
 	"sort"
+
+	"github.com/v1tbrah/metricsAndAlerting/internal/server/repo"
+	"github.com/v1tbrah/metricsAndAlerting/internal/server/service"
+	"github.com/v1tbrah/metricsAndAlerting/pkg/metric"
 )
 
 var (
@@ -49,14 +50,15 @@ func (a *api) getMetricValueHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), statusCode)
 		return
 	}
-	if statusCode, err := a.checkValidMetricFromRequest(metricFromRequest, "value"); err != nil {
-		http.Error(w, err.Error(), statusCode)
-		return
-	}
 
 	metricForResponse, ok := a.service.MemStorage.Data.Metrics[metricFromRequest.ID]
 	if !ok {
 		http.Error(w, ErrMetricNotFound.Error(), http.StatusNotFound)
+		return
+	}
+
+	if statusCode, err := a.checkValidMetricFromRequest(metricFromRequest, "value"); err != nil {
+		http.Error(w, err.Error(), statusCode)
 		return
 	}
 

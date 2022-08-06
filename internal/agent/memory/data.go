@@ -1,12 +1,13 @@
 package memory
 
 import (
-	"github.com/v1tbrah/metricsAndAlerting/pkg/metric"
 	"log"
 	"math/rand"
 	"reflect"
 	"runtime"
 	"sync"
+
+	"github.com/v1tbrah/metricsAndAlerting/pkg/metric"
 )
 
 type Data struct {

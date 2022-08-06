@@ -54,14 +54,8 @@ func (m *Metrics) UpdateHash(keyForUpdate string) error {
 
 	valueForHash := ""
 	if m.MType == "gauge" {
-		if m.Value == nil {
-			return errors.New("nil pointer")
-		}
 		valueForHash = fmt.Sprintf("%s:gauge:%f", m.ID, *m.Value)
 	} else if m.MType == "counter" {
-		if m.Delta == nil {
-			return errors.New("nil pointer")
-		}
 		valueForHash = fmt.Sprintf("%s:counter:%d", m.ID, *m.Delta)
 	}
 
