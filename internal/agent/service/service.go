@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"log"
+	"math/rand"
 	"os"
 	"os/signal"
 	"syscall"
@@ -39,6 +40,7 @@ func (s *service) Run() {
 	shutdown := make(chan os.Signal, 1)
 	signal.Notify(shutdown, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
 
+	rand.Seed(time.Now().UnixNano())
 	go s.updateData()
 	go s.reportData()
 

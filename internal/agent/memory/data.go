@@ -1,14 +1,12 @@
 package memory
 
 import (
+	"github.com/v1tbrah/metricsAndAlerting/pkg/metric"
 	"log"
 	"math/rand"
 	"reflect"
 	"runtime"
 	"sync"
-	"time"
-
-	"github.com/v1tbrah/metricsAndAlerting/pkg/metric"
 )
 
 type Data struct {
@@ -96,28 +94,26 @@ func (d *Data) updateGaugeMetrics(keyForUpdateHash string) {
 			log.Fatalln("unsupported metric type")
 		}
 		currMetric.Value = &valueForUpd
+		metricsToUpdate[name] = currMetric
+	}
+
+	randomValue := metricsToUpdate["RandomValue"]
+	newRandomValue := rand.Float64()
+	*randomValue.Value = newRandomValue
+	metricsToUpdate["RandomValue"] = randomValue
+
+	for _, currMetric := range metricsToUpdate {
 		if keyForUpdateHash != "" {
 			if err := currMetric.UpdateHash(keyForUpdateHash); err != nil {
 				log.Println(err.Error())
 			}
 		}
-		metricsToUpdate[name] = currMetric
 	}
+
 }
 
 func (d *Data) updateCounterMetrics(keyForUpdateHash string) {
 	metricsToUpdate := d.Metrics
-
-	RandomValue := metricsToUpdate["RandomValue"]
-	rand.Seed(time.Now().UnixNano())
-	newRandomValue := rand.Float64()
-	*RandomValue.Value = newRandomValue
-	if keyForUpdateHash != "" {
-		if err := RandomValue.UpdateHash(keyForUpdateHash); err != nil {
-			log.Println(err.Error())
-		}
-	}
-	metricsToUpdate["RandomValue"] = RandomValue
 
 	PollCount := metricsToUpdate["PollCount"]
 	*PollCount.Delta++
@@ -127,5 +123,4 @@ func (d *Data) updateCounterMetrics(keyForUpdateHash string) {
 		}
 	}
 	metricsToUpdate["PollCount"] = PollCount
-
 }

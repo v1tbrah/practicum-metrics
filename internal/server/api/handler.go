@@ -96,9 +96,7 @@ func (a *api) checkValidMetricFromRequest(metric *metric.Metrics, requestType st
 
 	if requestType == "update" {
 		if metric.MType == "gauge" && metric.Value == nil {
-			if metric.Value == nil {
-				return http.StatusNotFound, ErrMetricValueNotSpecified
-			}
+			return http.StatusNotFound, ErrMetricValueNotSpecified
 		} else if metric.MType == "counter" && metric.Delta == nil {
 			return http.StatusNotFound, ErrMetricValueNotSpecified
 		}
