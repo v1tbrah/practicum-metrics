@@ -128,13 +128,13 @@ func (a *api) updateGaugeMetric(newMetric *metric.Metrics, w http.ResponseWriter
 	}
 	*metricForUpd.Value = *newMetric.Value
 
-	a.service.MemStorage.Data.Metrics[metricForUpd.ID] = metricForUpd
-
 	if a.service.Cfg.Key != "" {
 		if err := metricForUpd.UpdateHash(a.service.Cfg.Key); err != nil {
 			log.Println(err)
 		}
 	}
+
+	a.service.MemStorage.Data.Metrics[metricForUpd.ID] = metricForUpd
 
 	resp, _ := json.Marshal(metricForUpd)
 	w.Header().Set("Content-Type", "application/json")
@@ -157,13 +157,13 @@ func (a *api) updateCounterMetric(newMetric *metric.Metrics, w http.ResponseWrit
 
 	*metricForUpd.Delta += *newMetric.Delta
 
-	a.service.MemStorage.Data.Metrics[metricForUpd.ID] = metricForUpd
-
 	if a.service.Cfg.Key != "" {
 		if err := metricForUpd.UpdateHash(a.service.Cfg.Key); err != nil {
 			log.Println(err)
 		}
 	}
+
+	a.service.MemStorage.Data.Metrics[metricForUpd.ID] = metricForUpd
 
 	resp, _ := json.Marshal(metricForUpd)
 	w.Header().Set("Content-Type", "application/json")
