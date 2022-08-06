@@ -52,7 +52,7 @@ func (s *service) updateData() {
 	ticker := time.NewTicker(s.cfg.PollInterval)
 	for {
 		<-ticker.C
-		s.data.Update()
+		s.data.Update(s.cfg.Key)
 	}
 }
 
@@ -114,4 +114,9 @@ func (s *service) getMetric(ID, MType string) (*resty.Response, error) {
 		Post(s.cfg.GetMetricURL)
 
 	return resp, err
+}
+
+func (s *service) hashMetric(valForHash, keyForHash string) string {
+
+	return ""
 }

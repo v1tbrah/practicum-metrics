@@ -54,15 +54,15 @@ func NewData() *Data {
 }
 
 // Update updates all metrics.
-func (d *Data) Update() {
+func (d *Data) Update(keyForUpdateHash string) {
 	d.Lock()
 	defer d.Unlock()
-	d.updateGaugeMetrics()
-	d.updateCounterMetrics()
+	d.updateGaugeMetrics(keyForUpdateHash)
+	d.updateCounterMetrics(keyForUpdateHash)
 	log.Println("All metrics updated.")
 }
 
-func (d *Data) updateGaugeMetrics() {
+func (d *Data) updateGaugeMetrics(keyForUpdateHash string) {
 	metricsToUpdate := d.Metrics
 
 	runtimeStats := runtime.MemStats{}
@@ -96,18 +96,36 @@ func (d *Data) updateGaugeMetrics() {
 			log.Fatalln("unsupported metric type")
 		}
 		currMetric.Value = &valueForUpd
+		if keyForUpdateHash != "" {
+			if err := currMetric.UpdateHash(keyForUpdateHash); err != nil {
+				log.Println(err.Error())
+			}
+		}
 		metricsToUpdate[name] = currMetric
 	}
 }
 
-func (d *Data) updateCounterMetrics() {
+func (d *Data) updateCounterMetrics(keyForUpdateHash string) {
 	metricsToUpdate := d.Metrics
 
 	RandomValue := metricsToUpdate["RandomValue"]
 	rand.Seed(time.Now().UnixNano())
 	newRandomValue := rand.Float64()
 	*RandomValue.Value = newRandomValue
+	if keyForUpdateHash != "" {
+		if err := RandomValue.UpdateHash(keyForUpdateHash); err != nil {
+			log.Println(err.Error())
+		}
+	}
+	metricsToUpdate["RandomValue"] = RandomValue
 
 	PollCount := metricsToUpdate["PollCount"]
 	*PollCount.Delta++
+	if keyForUpdateHash != "" {
+		if err := PollCount.UpdateHash(keyForUpdateHash); err != nil {
+			log.Println(err.Error())
+		}
+	}
+	metricsToUpdate["PollCount"] = PollCount
+
 }

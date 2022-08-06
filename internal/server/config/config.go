@@ -19,6 +19,7 @@ type Config struct {
 	StoreInterval time.Duration `env:"STORE_INTERVAL"`
 	StoreFile     string        `env:"STORE_FILE"`
 	Restore       bool          `env:"RESTORE"`
+	Key           string        `env:"KEY"`
 }
 
 func NewCfg(args ...string) *Config {
@@ -45,6 +46,7 @@ func (c *Config) parseFromOsArgs() {
 	flag.DurationVar(&c.StoreInterval, "i", c.StoreInterval, "interval for writing metrics to a file")
 	flag.StringVar(&c.StoreFile, "f", c.StoreFile, "path to persistent file storage")
 	flag.BoolVar(&c.Restore, "r", c.Restore, "flag for loading metrics from a file at the start of the api")
+	flag.StringVar(&c.Key, "k", c.Key, "secret key for hash calculation")
 
 	flag.Parse()
 }

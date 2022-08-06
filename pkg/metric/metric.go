@@ -1,10 +1,23 @@
 package metric
 
+import (
+	"crypto/hmac"
+	"crypto/sha256"
+	"errors"
+	"fmt"
+)
+
+var (
+	ErrInvalidType             = errors.New("invalid type of metric")
+	ErrKeyForUpdateHashIsEmpty = errors.New("key for update hash is empty")
+)
+
 type Metrics struct {
 	ID    string   `json:"id"`
 	MType string   `json:"type"`
 	Delta *int64   `json:"delta,omitempty"`
 	Value *float64 `json:"value,omitempty"`
+	Hash  string   `json:"hash,omitempty"`
 }
 
 // NewMetric returns new Metrics.
@@ -26,4 +39,28 @@ func NewMetric(ID, MType string) Metrics {
 // TypeIsValid checks the validity of metrics.
 func (m *Metrics) TypeIsValid() bool {
 	return m.MType == "gauge" || m.MType == "counter"
+}
+
+func (m *Metrics) UpdateHash(keyForUpdate string) error {
+
+	if keyForUpdate == "" {
+		return ErrKeyForUpdateHashIsEmpty
+	}
+	if !m.TypeIsValid() {
+		return ErrInvalidType
+	}
+
+	valueForHash := ""
+	if m.MType == "gauge" {
+		valueForHash = fmt.Sprintf("%s:gauge:%f", m.ID, *m.Value)
+	} else if m.MType == "counter" {
+		valueForHash = fmt.Sprintf("%s:counter:%d", m.ID, *m.Delta)
+	}
+
+	h := hmac.New(sha256.New, []byte(keyForUpdate))
+	h.Write([]byte(valueForHash))
+	sign := h.Sum(nil)
+	m.Hash = string(sign)
+
+	return nil
 }

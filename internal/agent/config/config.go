@@ -17,6 +17,7 @@ type Config struct {
 	ServerAddr      string        `env:"ADDRESS"`
 	PollInterval    time.Duration `env:"POLL_INTERVAL"`
 	ReportInterval  time.Duration `env:"REPORT_INTERVAL"`
+	Key             string        `env:"KEY"`
 	ReportMetricURL string
 	GetMetricURL    string
 }
@@ -48,6 +49,7 @@ func (c *Config) parseFromOsArgs() {
 	flag.StringVar(&c.ServerAddr, "a", c.ServerAddr, "server address")
 	flag.DurationVar(&c.PollInterval, "p", c.PollInterval, "interval for updating metrics")
 	flag.DurationVar(&c.ReportInterval, "r", c.ReportInterval, "interval for report metrics to server")
+	flag.StringVar(&c.Key, "k", c.Key, "secret key for hash calculation")
 
 	if !flag.Parsed() {
 		flag.Parse()
