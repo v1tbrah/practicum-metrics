@@ -50,15 +50,14 @@ func (a *api) getMetricValueHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), statusCode)
 		return
 	}
+	if statusCode, err := a.checkValidMetricFromRequest(metricFromRequest, "value"); err != nil {
+		http.Error(w, err.Error(), statusCode)
+		return
+	}
 
 	metricForResponse, ok := a.service.MemStorage.Data.Metrics[metricFromRequest.ID]
 	if !ok {
 		http.Error(w, ErrMetricNotFound.Error(), http.StatusNotFound)
-		return
-	}
-
-	if statusCode, err := a.checkValidMetricFromRequest(metricFromRequest, "value"); err != nil {
-		http.Error(w, err.Error(), statusCode)
 		return
 	}
 
