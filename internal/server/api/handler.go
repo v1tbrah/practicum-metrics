@@ -74,6 +74,7 @@ func (a *api) getMetricValueHandler(w http.ResponseWriter, r *http.Request) {
 
 func fillMetricFromRequestBody(metric *metric.Metrics, requestBody io.ReadCloser) (int, error) {
 	body, err := io.ReadAll(requestBody)
+	log.Println("ЭТО ЗАПРОС:", string(body))
 	if err != nil && err != io.EOF {
 		log.Println("ВОТ ЗДЕСЬ #1 ВЕРНУЛСЯ", err)
 		return http.StatusBadRequest, err
