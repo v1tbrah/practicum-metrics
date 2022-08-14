@@ -60,7 +60,7 @@ func (a *api) newRouter() chi.Router {
 	r.Use(gzipWriteHandle)
 
 	r.Get("/", a.getPageHandler())
-	r.Get("/ping/", a.checkDBConnHandler())
+	r.Get("/ping", a.checkDBConnHandler())
 	r.Post("/update/", a.updateMetricHandler)
 	r.Post("/value/", a.getMetricValueHandler)
 	r.Post("/update/{type}/{metric}/{val}", a.updateMetricHandlerPathParams())
