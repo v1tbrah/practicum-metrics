@@ -18,7 +18,7 @@ import (
 func TestUpdateHandler(t *testing.T) {
 
 	myCfg := config.NewCfg()
-	testAPI := NewAPI(service.NewService(memory.NewStorage(), myCfg))
+	testAPI := NewAPI(service.NewService(memory.New(), myCfg))
 
 	localHost := "http://127.0.0.1:8080"
 
@@ -140,11 +140,11 @@ func TestGetValueHandler(t *testing.T) {
 	localHost := "http://127.0.0.1:8080"
 
 	myCfg := config.NewCfg()
-	testAPI := NewAPI(service.NewService(memory.NewStorage(), myCfg))
+	testAPI := NewAPI(service.NewService(memory.New(), myCfg))
 
 	gaugeValue := 2.22
-	testAPIWithAllocMetric := NewAPI(service.NewService(memory.NewStorage(), myCfg))
-	testAPIWithAllocMetric.service.MemStorage.Data.Metrics["Alloc"] = metric.Metrics{
+	testAPIWithAllocMetric := NewAPI(service.NewService(memory.New(), myCfg))
+	testAPIWithAllocMetric.service.Storage.GetData().Metrics["Alloc"] = metric.Metrics{
 		ID:    "Alloc",
 		MType: "gauge",
 		Delta: nil,
@@ -152,8 +152,8 @@ func TestGetValueHandler(t *testing.T) {
 	}
 
 	counterValue := int64(2)
-	testAPIWithCounterMetric := NewAPI(service.NewService(memory.NewStorage(), myCfg))
-	testAPIWithCounterMetric.service.MemStorage.Data.Metrics["PollCount"] = metric.Metrics{
+	testAPIWithCounterMetric := NewAPI(service.NewService(memory.New(), myCfg))
+	testAPIWithCounterMetric.service.Storage.GetData().Metrics["PollCount"] = metric.Metrics{
 		ID:    "PollCount",
 		MType: "counter",
 		Delta: &counterValue,

@@ -36,7 +36,7 @@ func (a *api) getMetricValueHandlerPathParams() http.HandlerFunc {
 			return
 		}
 
-		metricLocal, ok := a.service.MemStorage.Data.Metrics[metricFromRequest.ID]
+		metricLocal, ok := a.service.Storage.GetData().Metrics[metricFromRequest.ID]
 		if !ok {
 			http.Error(w, ErrMetricNotFound.Error(), http.StatusNotFound)
 			return

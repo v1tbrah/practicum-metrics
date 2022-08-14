@@ -3,25 +3,24 @@ package service
 import (
 	"encoding/json"
 	"errors"
-
 	"io"
 	"log"
 	"os"
 	"time"
 
 	"github.com/v1tbrah/metricsAndAlerting/internal/server/config"
+	"github.com/v1tbrah/metricsAndAlerting/internal/server/model"
 	"github.com/v1tbrah/metricsAndAlerting/internal/server/repo"
-	"github.com/v1tbrah/metricsAndAlerting/internal/server/repo/memory"
 )
 
 type Service struct {
-	MemStorage *memory.Storage
-	Cfg        *config.Config
+	Storage repo.Storage
+	Cfg     *config.Config
 }
 
 // NewService returns new Service.
-func NewService(memStorage *memory.Storage, cfg *config.Config) *Service {
-	service := &Service{MemStorage: memStorage, Cfg: cfg}
+func NewService(storage repo.Storage, cfg *config.Config) *Service {
+	service := &Service{Storage: storage, Cfg: cfg}
 	if service.Cfg.Restore {
 		if err := service.restoreMetricsFromFile(); err != nil {
 			log.Println(err)
@@ -47,7 +46,7 @@ func (s *Service) SaveMetricsToFile() error {
 	}
 	defer file.Close()
 
-	dataMetrics, err := json.Marshal(s.MemStorage.Data)
+	dataMetrics, err := json.Marshal(s.Storage.GetData())
 	if err != nil {
 		log.Println(err)
 		return err
@@ -82,12 +81,12 @@ func (s *Service) restoreMetricsFromFile() error {
 	if err != nil {
 		return err
 	}
-	newMetrics := repo.NewData()
+	newMetrics := model.NewData()
 	if err = json.NewDecoder(file).Decode(newMetrics); err != nil {
 		if !errors.Is(err, io.EOF) {
 			return err
 		}
 	}
-	s.MemStorage.Data = newMetrics
+	s.Storage.SetData(newMetrics)
 	return nil
 }

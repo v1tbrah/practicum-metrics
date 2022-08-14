@@ -18,6 +18,7 @@ type Config struct {
 	PollInterval    time.Duration `env:"POLL_INTERVAL"`
 	ReportInterval  time.Duration `env:"REPORT_INTERVAL"`
 	Key             string        `env:"KEY"`
+	PgConnStr       string        `env:"DATABASE_DSN"`
 	ReportMetricURL string
 	GetMetricURL    string
 }
@@ -50,6 +51,7 @@ func (c *Config) parseFromOsArgs() {
 	flag.DurationVar(&c.PollInterval, "p", c.PollInterval, "interval for updating metrics")
 	flag.DurationVar(&c.ReportInterval, "r", c.ReportInterval, "interval for report metrics to server")
 	flag.StringVar(&c.Key, "k", c.Key, "secret key for hash calculation")
+	flag.StringVar(&c.PgConnStr, "d", c.PgConnStr, "postgres connection string")
 
 	if !flag.Parsed() {
 		flag.Parse()

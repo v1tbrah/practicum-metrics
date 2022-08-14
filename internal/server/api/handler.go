@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -9,7 +10,9 @@ import (
 	"net/http"
 	"sort"
 
-	"github.com/v1tbrah/metricsAndAlerting/internal/server/repo"
+	"github.com/jackc/pgx/v4/pgxpool"
+
+	"github.com/v1tbrah/metricsAndAlerting/internal/server/model"
 	"github.com/v1tbrah/metricsAndAlerting/internal/server/service"
 	"github.com/v1tbrah/metricsAndAlerting/pkg/metric"
 )
@@ -56,7 +59,7 @@ func (a *api) getMetricValueHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	metricForResponse, ok := a.service.MemStorage.Data.Metrics[metricFromRequest.ID]
+	metricForResponse, ok := a.service.Storage.GetData().Metrics[metricFromRequest.ID]
 	if !ok {
 		http.Error(w, ErrMetricNotFound.Error(), http.StatusNotFound)
 		return
@@ -71,6 +74,18 @@ func (a *api) getMetricValueHandler(w http.ResponseWriter, r *http.Request) {
 	resp, _ := json.Marshal(metricForResponse)
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(resp)
+}
+
+func (a *api) checkDBConnHandler() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		dbPool, err := pgxpool.Connect(context.Background(), a.service.Cfg.PgConnString)
+		defer dbPool.Close()
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		} else {
+			w.WriteHeader(http.StatusOK)
+		}
+	}
 }
 
 func fillMetricFromRequestBody(metric *metric.Metrics, requestBody io.ReadCloser) (int, error) {
@@ -108,10 +123,10 @@ func (a *api) checkValidMetricFromRequest(metric *metric.Metrics, requestType st
 
 func (a *api) updateGaugeMetric(newMetric *metric.Metrics, w http.ResponseWriter, r *http.Request) {
 
-	a.service.MemStorage.Data.Lock()
-	defer a.service.MemStorage.Data.Unlock()
+	a.service.Storage.GetData().Lock()
+	defer a.service.Storage.GetData().Unlock()
 
-	metricForUpd, ok := a.service.MemStorage.Data.Metrics[newMetric.ID]
+	metricForUpd, ok := a.service.Storage.GetData().Metrics[newMetric.ID]
 	if !ok {
 		metricForUpd = metric.Metrics{}
 		metricForUpd.ID = newMetric.ID
@@ -127,7 +142,7 @@ func (a *api) updateGaugeMetric(newMetric *metric.Metrics, w http.ResponseWriter
 		}
 	}
 
-	a.service.MemStorage.Data.Metrics[metricForUpd.ID] = metricForUpd
+	a.service.Storage.GetData().Metrics[metricForUpd.ID] = metricForUpd
 
 	resp, _ := json.Marshal(metricForUpd)
 	w.Header().Set("Content-Type", "application/json")
@@ -136,10 +151,10 @@ func (a *api) updateGaugeMetric(newMetric *metric.Metrics, w http.ResponseWriter
 
 func (a *api) updateCounterMetric(newMetric *metric.Metrics, w http.ResponseWriter, r *http.Request) {
 
-	a.service.MemStorage.Data.Lock()
-	defer a.service.MemStorage.Data.Unlock()
+	a.service.Storage.GetData().Lock()
+	defer a.service.Storage.GetData().Unlock()
 
-	metricForUpd, ok := a.service.MemStorage.Data.Metrics[newMetric.ID]
+	metricForUpd, ok := a.service.Storage.GetData().Metrics[newMetric.ID]
 	if !ok {
 		metricForUpd = metric.Metrics{}
 		metricForUpd.ID = newMetric.ID
@@ -156,7 +171,7 @@ func (a *api) updateCounterMetric(newMetric *metric.Metrics, w http.ResponseWrit
 		}
 	}
 
-	a.service.MemStorage.Data.Metrics[metricForUpd.ID] = metricForUpd
+	a.service.Storage.GetData().Metrics[metricForUpd.ID] = metricForUpd
 
 	resp, _ := json.Marshal(metricForUpd)
 	w.Header().Set("Content-Type", "application/json")
@@ -166,7 +181,7 @@ func (a *api) updateCounterMetric(newMetric *metric.Metrics, w http.ResponseWrit
 func (a *api) getPageHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		dataForPage := service.NewDataForPage()
-		fillMetricsForPage(&dataForPage.Metrics, a.service.MemStorage.Data)
+		fillMetricsForPage(&dataForPage.Metrics, a.service.Storage.GetData())
 		page, err := dataForPage.Page()
 		if err != nil {
 			log.Fatalln(err)
@@ -176,11 +191,11 @@ func (a *api) getPageHandler() http.HandlerFunc {
 	}
 }
 
-func fillMetricsForPage(dataForPage *[]string, metrics *repo.Data) {
+func fillMetricsForPage(dataForPage *[]string, metrics *model.Data) {
 	*dataForPage = append(*dataForPage, sortedMetricsForPage(metrics)...)
 }
 
-func sortedMetricsForPage(metrics *repo.Data) []string {
+func sortedMetricsForPage(metrics *model.Data) []string {
 	sortedMetrics := []string{}
 	for _, currMetric := range metrics.Metrics {
 		if currMetric.MType == "gauge" {

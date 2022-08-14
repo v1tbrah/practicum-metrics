@@ -20,6 +20,7 @@ type Config struct {
 	StoreFile     string        `env:"STORE_FILE"`
 	Restore       bool          `env:"RESTORE"`
 	Key           string        `env:"KEY"`
+	PgConnString  string        `env:"DATABASE_DSN"`
 }
 
 func NewCfg(args ...string) *Config {
@@ -47,6 +48,7 @@ func (c *Config) parseFromOsArgs() {
 	flag.StringVar(&c.StoreFile, "f", c.StoreFile, "path to persistent file storage")
 	flag.BoolVar(&c.Restore, "r", c.Restore, "flag for loading metrics from a file at the start of the api")
 	flag.StringVar(&c.Key, "k", c.Key, "secret key for hash calculation")
+	flag.StringVar(&c.PgConnString, "d", c.PgConnString, "postgres db conn string")
 
 	flag.Parse()
 }
