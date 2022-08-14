@@ -79,11 +79,11 @@ func (a *api) getMetricValueHandler(w http.ResponseWriter, r *http.Request) {
 func (a *api) checkDBConnHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		dbPool, err := pgxpool.Connect(context.Background(), a.service.Cfg.PgConnString)
-		defer dbPool.Close()
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		} else {
-			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(""))
+			defer dbPool.Close()
 		}
 	}
 }
