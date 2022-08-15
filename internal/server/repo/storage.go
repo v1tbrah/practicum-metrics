@@ -14,6 +14,8 @@ var ErrEmptyConfig = errors.New("empty config")
 type Storage interface {
 	GetData() *model.Data
 	SetData(*model.Data)
+	RestoreData() error
+	StoreData() error
 }
 
 func New(cfg *config.Config) (Storage, error) {
@@ -23,9 +25,9 @@ func New(cfg *config.Config) (Storage, error) {
 
 	switch {
 	case strings.TrimSpace(cfg.PgConnString) != "":
-		return pg.New(), nil
+		return pg.New(cfg.PgConnString), nil
 	default:
-		return memory.New(), nil
+		return memory.New(cfg.StoreFile), nil
 	}
 
 }

@@ -43,10 +43,10 @@ func (a *api) Run() {
 	}()
 
 	<-exit
-	if err := a.service.SaveMetricsToFile(); err != nil {
+	if err := a.service.Storage.StoreData(); err != nil {
 		log.Println(err)
 	} else {
-		log.Println("Data saved in file:", a.service.Cfg.StoreFile)
+		log.Println("Data saved in storage")
 	}
 	log.Println("API exits normally.")
 	os.Exit(0)
