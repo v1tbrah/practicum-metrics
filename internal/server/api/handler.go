@@ -51,25 +51,29 @@ func (a *api) updateMetricHandler(w http.ResponseWriter, r *http.Request) {
 func (a *api) getMetricValueHandler(w http.ResponseWriter, r *http.Request) {
 	metricFromRequest := &metric.Metrics{}
 	if statusCode, err := fillMetricFromRequestBody(metricFromRequest, r.Body); err != nil {
+		log.Println(err.Error())
 		http.Error(w, err.Error(), statusCode)
 		return
 	}
 	if statusCode, err := a.checkValidMetricFromRequest(metricFromRequest, "value"); err != nil {
+		log.Println(err.Error())
 		http.Error(w, err.Error(), statusCode)
 		return
 	}
 
 	metricForResponse, ok, err := a.service.Storage.GetMetric(metricFromRequest.ID)
 	if err != nil {
+		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	} else if !ok {
+		log.Println(err.Error())
 		http.Error(w, ErrMetricNotFound.Error(), http.StatusNotFound)
 		return
 	}
 
 	if a.service.Cfg.Key != "" {
-		if err := metricForResponse.UpdateHash(a.service.Cfg.Key); err != nil {
+		if err = metricForResponse.UpdateHash(a.service.Cfg.Key); err != nil {
 			log.Println(err)
 		}
 	}
@@ -128,6 +132,7 @@ func (a *api) updateGaugeMetric(newMetric *metric.Metrics, w http.ResponseWriter
 
 	metricForUpd, ok, err := a.service.Storage.GetMetric(newMetric.ID)
 	if err != nil {
+		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -139,12 +144,13 @@ func (a *api) updateGaugeMetric(newMetric *metric.Metrics, w http.ResponseWriter
 	*metricForUpd.Value = *newMetric.Value
 
 	if a.service.Cfg.Key != "" {
-		if err := metricForUpd.UpdateHash(a.service.Cfg.Key); err != nil {
+		if err = metricForUpd.UpdateHash(a.service.Cfg.Key); err != nil {
 			log.Println(err)
 		}
 	}
 
 	if err = a.service.Storage.SetMetric(metricForUpd.ID, metricForUpd); err != nil {
+		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -158,6 +164,7 @@ func (a *api) updateCounterMetric(newMetric *metric.Metrics, w http.ResponseWrit
 
 	metricForUpd, ok, err := a.service.Storage.GetMetric(newMetric.ID)
 	if err != nil {
+		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -169,12 +176,13 @@ func (a *api) updateCounterMetric(newMetric *metric.Metrics, w http.ResponseWrit
 	*metricForUpd.Delta += *newMetric.Delta
 
 	if a.service.Cfg.Key != "" {
-		if err := metricForUpd.UpdateHash(a.service.Cfg.Key); err != nil {
+		if err = metricForUpd.UpdateHash(a.service.Cfg.Key); err != nil {
 			log.Println(err)
 		}
 	}
 
 	if err = a.service.Storage.SetMetric(metricForUpd.ID, metricForUpd); err != nil {
+		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
