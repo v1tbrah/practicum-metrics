@@ -47,7 +47,7 @@ func (p *pgStorage) GetMetric(ID string) (metric.Metrics, bool, error) {
 	var value sql.NullFloat64
 	err := row.Scan(&thisMetric.ID, &thisMetric.MType, &delta, &value)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if err.Error() == "no rows in result set" {
 			return thisMetric, false, nil
 		} else {
 			return thisMetric, false, err
