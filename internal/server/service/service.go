@@ -3,8 +3,8 @@ package service
 import (
 	"github.com/v1tbrah/metricsAndAlerting/internal/server/config"
 	"github.com/v1tbrah/metricsAndAlerting/internal/server/repo"
+	"github.com/v1tbrah/metricsAndAlerting/internal/server/repo/memory"
 	"log"
-	"strings"
 	"time"
 )
 
@@ -17,16 +17,18 @@ type Service struct {
 func NewService(storage repo.Storage, cfg *config.Config) *Service {
 	service := &Service{Storage: storage, Cfg: cfg}
 
-	if service.Cfg.Restore {
-		if err := service.Storage.RestoreData(); err != nil {
-			log.Println(err)
-		} else {
-			log.Println("Metrics restored")
-		}
-	}
+	if cfg.StorageType == config.InMemory {
 
-	if haveDBConnection := strings.TrimSpace(cfg.PgConnString) != ""; !haveDBConnection {
-		if needWriteMetricsToFileWithInterval := service.Cfg.StoreInterval != time.Second*0; needWriteMetricsToFileWithInterval {
+		inMemStorage, _ := service.Storage.(*memory.MemStorage)
+		if service.Cfg.Restore {
+			if err := inMemStorage.RestoreData(); err != nil {
+				log.Println(err)
+			} else {
+				log.Println("Metrics restored.")
+			}
+		}
+
+		if intervalIsSet := service.Cfg.StoreInterval != time.Second*0; intervalIsSet {
 			go service.writeMetricsToFileWithInterval()
 		}
 	}
@@ -42,9 +44,10 @@ func (s *Service) writeMetricsToFileWithInterval() {
 		return
 	}
 	ticker := time.NewTicker(s.Cfg.StoreInterval)
+	inMemStorage, _ := s.Storage.(*memory.MemStorage)
 	for {
 		<-ticker.C
-		if err := s.Storage.StoreData(); err != nil {
+		if err := inMemStorage.StoreData(); err != nil {
 			log.Println(err)
 		} else {
 			log.Println("Metrics saved to file:", s.Cfg.StoreFile)

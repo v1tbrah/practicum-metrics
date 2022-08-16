@@ -38,44 +38,56 @@ func New(pgConn string) *pgStorage {
 	return &pgStorage{Data: model.NewData(), dbPool: dbPool}
 }
 
-func (p *pgStorage) GetData() *model.Data {
-	return p.Data
+func (p *pgStorage) GetMetric(ID string) (metric.Metrics, bool, error) {
+	thisMetric := metric.Metrics{}
+
+	row := p.dbPool.QueryRow(context.Background(), "SELECT id, type, delta, value FROM metrics WHERE id=$1", ID)
+
+	var delta sql.NullInt64
+	var value sql.NullFloat64
+	err := row.Scan(&thisMetric.ID, &thisMetric.MType, &delta, &value)
+	if err != nil {
+		return thisMetric, false, err
+	}
+	if metricNotFound := thisMetric.ID == ""; metricNotFound {
+		return thisMetric, false, nil
+	}
+
+	if thisMetric.MType == "gauge" && value.Valid {
+		thisMetric.Value = &value.Float64
+	} else if thisMetric.MType == "counter" && delta.Valid {
+		thisMetric.Delta = &delta.Int64
+	}
+
+	return thisMetric, true, nil
 }
 
-func (p *pgStorage) SetData(data *model.Data) {
-	p.Data = data
-}
+func (p *pgStorage) SetMetric(ID string, thisMetric metric.Metrics) error {
 
-func (p *pgStorage) RestoreData() error {
-
-	dataFromStorage, err := p.dataFromStorage()
+	ctx := context.Background()
+	tx, err := p.dbPool.Begin(ctx)
 	if err != nil {
 		return err
 	}
-	p.SetData(dataFromStorage)
+	if _, err = tx.Exec(ctx, "DELETE FROM metrics WHERE id=$1", ID); err != nil {
+		tx.Rollback(ctx)
+		return err
+	}
+	if _, err = tx.Exec(ctx, "INSERT INTO metrics (id, type, delta, value) values ($1, $2, $3, $4)",
+		ID, thisMetric.MType, thisMetric.Delta, thisMetric.Value); err != nil {
+		tx.Rollback(ctx)
+		return err
+	}
+	tx.Commit(ctx)
 	return nil
 }
 
-func (p *pgStorage) StoreData() error {
-
-	tx, err := p.dbPool.Begin(context.Background())
+func (p *pgStorage) GetData() (*model.Data, error) {
+	dataFromStorage, err := p.dataFromStorage()
 	if err != nil {
-		return err
+		return nil, err
 	}
-	if _, err = tx.Exec(context.Background(), "DELETE FROM metrics"); err != nil {
-		tx.Rollback(context.Background())
-		return err
-	}
-	for name, currMetric := range p.Data.Metrics {
-		if _, err = tx.Exec(context.Background(), "INSERT INTO metrics (id, type, delta, value) values ($1, $2, $3, $4)",
-			name, currMetric.MType, currMetric.Delta, currMetric.Value); err != nil {
-			tx.Rollback(context.Background())
-			return err
-		}
-	}
-
-	err = tx.Commit(context.Background())
-	return err
+	return dataFromStorage, nil
 }
 
 func (p *pgStorage) dataFromStorage() (*model.Data, error) {
@@ -97,10 +109,6 @@ func (p *pgStorage) dataFromStorage() (*model.Data, error) {
 		var delta sql.NullInt64
 		var value sql.NullFloat64
 		rows.Scan(&currMetric.ID, &currMetric.MType, &delta, &value)
-		if !currMetric.TypeIsValid() {
-			log.Println("Restore metric. Error. Reason:", err)
-			continue
-		}
 		if currMetric.MType == "gauge" && value.Valid {
 			currMetric.Value = &value.Float64
 		} else if currMetric.MType == "counter" && delta.Valid {

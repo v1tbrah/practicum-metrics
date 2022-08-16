@@ -1,6 +1,8 @@
 package api
 
 import (
+	"github.com/v1tbrah/metricsAndAlerting/internal/server/config"
+	"github.com/v1tbrah/metricsAndAlerting/internal/server/repo/memory"
 	"log"
 	"net/http"
 	"os"
@@ -43,10 +45,13 @@ func (a *api) Run() {
 	}()
 
 	<-exit
-	if err := a.service.Storage.StoreData(); err != nil {
-		log.Println(err)
-	} else {
-		log.Println("Data saved in storage")
+	if a.service.Cfg.StorageType == config.InMemory {
+		inMemStorage, _ := a.service.Storage.(*memory.MemStorage)
+		if err := inMemStorage.StoreData(); err != nil {
+			log.Println(err)
+		} else {
+			log.Println("Data saved in file.")
+		}
 	}
 	log.Println("API exits normally.")
 	os.Exit(0)

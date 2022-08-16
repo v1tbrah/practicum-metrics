@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/v1tbrah/metricsAndAlerting/internal/server/model"
+	"github.com/v1tbrah/metricsAndAlerting/pkg/metric"
 	"io"
 	"log"
 	"os"
@@ -19,12 +20,18 @@ func New(storeFile string) *MemStorage {
 	return &MemStorage{Data: model.NewData(), storeFile: storeFile}
 }
 
-func (m *MemStorage) GetData() *model.Data {
-	return m.Data
+func (m *MemStorage) GetMetric(ID string) (metric.Metrics, bool, error) {
+	thisMetric, ok := m.Data.Metrics[ID]
+	return thisMetric, ok, nil
 }
 
-func (m *MemStorage) SetData(data *model.Data) {
-	m.Data = data
+func (m *MemStorage) SetMetric(ID string, thisMetric metric.Metrics) error {
+	m.Data.Metrics[ID] = thisMetric
+	return nil
+}
+
+func (m *MemStorage) GetData() (*model.Data, error) {
+	return m.Data, nil
 }
 
 func (m *MemStorage) RestoreData() error {
@@ -38,7 +45,7 @@ func (m *MemStorage) RestoreData() error {
 			return err
 		}
 	}
-	m.SetData(newMetrics)
+	m.Data = newMetrics
 	return nil
 }
 
@@ -53,12 +60,17 @@ func (m *MemStorage) StoreData() error {
 	}
 	defer file.Close()
 
-	dataMetrics, err := json.Marshal(m.GetData())
+	dataMetrics, err := m.GetData()
 	if err != nil {
 		log.Println(err)
 		return err
 	}
-	if _, err = file.Write(dataMetrics); err != nil {
+	dataMetricsJSON, err := json.Marshal(dataMetrics)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	if _, err = file.Write(dataMetricsJSON); err != nil {
 		log.Println(err)
 		return err
 	}

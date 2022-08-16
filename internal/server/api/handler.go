@@ -59,8 +59,11 @@ func (a *api) getMetricValueHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	metricForResponse, ok := a.service.Storage.GetData().Metrics[metricFromRequest.ID]
-	if !ok {
+	metricForResponse, ok, err := a.service.Storage.GetMetric(metricFromRequest.ID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	} else if !ok {
 		http.Error(w, ErrMetricNotFound.Error(), http.StatusNotFound)
 		return
 	}
@@ -123,14 +126,13 @@ func (a *api) checkValidMetricFromRequest(metric *metric.Metrics, requestType st
 
 func (a *api) updateGaugeMetric(newMetric *metric.Metrics, w http.ResponseWriter, r *http.Request) {
 
-	a.service.Storage.GetData().Lock()
-	defer a.service.Storage.GetData().Unlock()
-
-	metricForUpd, ok := a.service.Storage.GetData().Metrics[newMetric.ID]
+	metricForUpd, ok, err := a.service.Storage.GetMetric(newMetric.ID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 	if !ok {
-		metricForUpd = metric.Metrics{}
-		metricForUpd.ID = newMetric.ID
-		metricForUpd.MType = newMetric.MType
+		metricForUpd = metric.NewMetric(newMetric.ID, newMetric.MType)
 		var value float64
 		metricForUpd.Value = &value
 	}
@@ -142,7 +144,10 @@ func (a *api) updateGaugeMetric(newMetric *metric.Metrics, w http.ResponseWriter
 		}
 	}
 
-	a.service.Storage.GetData().Metrics[metricForUpd.ID] = metricForUpd
+	if err = a.service.Storage.SetMetric(metricForUpd.ID, metricForUpd); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
 	resp, _ := json.Marshal(metricForUpd)
 	w.Header().Set("Content-Type", "application/json")
@@ -151,18 +156,16 @@ func (a *api) updateGaugeMetric(newMetric *metric.Metrics, w http.ResponseWriter
 
 func (a *api) updateCounterMetric(newMetric *metric.Metrics, w http.ResponseWriter, r *http.Request) {
 
-	a.service.Storage.GetData().Lock()
-	defer a.service.Storage.GetData().Unlock()
-
-	metricForUpd, ok := a.service.Storage.GetData().Metrics[newMetric.ID]
-	if !ok {
-		metricForUpd = metric.Metrics{}
-		metricForUpd.ID = newMetric.ID
-		metricForUpd.MType = newMetric.MType
-		var value int64
-		metricForUpd.Delta = &value
+	metricForUpd, ok, err := a.service.Storage.GetMetric(newMetric.ID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
-
+	if !ok {
+		metricForUpd = metric.NewMetric(newMetric.ID, newMetric.MType)
+		var delta int64
+		metricForUpd.Delta = &delta
+	}
 	*metricForUpd.Delta += *newMetric.Delta
 
 	if a.service.Cfg.Key != "" {
@@ -171,7 +174,10 @@ func (a *api) updateCounterMetric(newMetric *metric.Metrics, w http.ResponseWrit
 		}
 	}
 
-	a.service.Storage.GetData().Metrics[metricForUpd.ID] = metricForUpd
+	if err = a.service.Storage.SetMetric(metricForUpd.ID, metricForUpd); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
 	resp, _ := json.Marshal(metricForUpd)
 	w.Header().Set("Content-Type", "application/json")
@@ -181,7 +187,11 @@ func (a *api) updateCounterMetric(newMetric *metric.Metrics, w http.ResponseWrit
 func (a *api) getPageHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		dataForPage := service.NewDataForPage()
-		fillMetricsForPage(&dataForPage.Metrics, a.service.Storage.GetData())
+		dataMetrics, err := a.service.Storage.GetData()
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+		fillMetricsForPage(&dataForPage.Metrics, dataMetrics)
 		page, err := dataForPage.Page()
 		if err != nil {
 			log.Fatalln(err)

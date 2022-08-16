@@ -144,21 +144,22 @@ func TestGetValueHandler(t *testing.T) {
 
 	gaugeValue := 2.22
 	testAPIWithAllocMetric := NewAPI(service.NewService(memory.New(""), myCfg))
-	testAPIWithAllocMetric.service.Storage.GetData().Metrics["Alloc"] = metric.Metrics{
-		ID:    "Alloc",
-		MType: "gauge",
-		Delta: nil,
-		Value: &gaugeValue,
-	}
+	testAPIWithAllocMetric.service.Storage.SetMetric("Alloc",
+		metric.Metrics{
+			ID:    "Alloc",
+			MType: "gauge",
+			Delta: nil,
+			Value: &gaugeValue,
+		})
 
 	counterValue := int64(2)
 	testAPIWithCounterMetric := NewAPI(service.NewService(memory.New(""), myCfg))
-	testAPIWithCounterMetric.service.Storage.GetData().Metrics["PollCount"] = metric.Metrics{
+	testAPIWithCounterMetric.service.Storage.SetMetric("PollCount", metric.Metrics{
 		ID:    "PollCount",
 		MType: "counter",
 		Delta: &counterValue,
 		Value: nil,
-	}
+	})
 
 	type args struct {
 		request *http.Request

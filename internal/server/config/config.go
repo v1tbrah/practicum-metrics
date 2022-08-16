@@ -2,7 +2,6 @@ package config
 
 import (
 	"flag"
-
 	"log"
 	"time"
 
@@ -14,6 +13,11 @@ const (
 	WithEnv  = "withEnv"
 )
 
+const (
+	InMemory = iota
+	InDB
+)
+
 type Config struct {
 	Addr          string        `env:"ADDRESS"`
 	StoreInterval time.Duration `env:"STORE_INTERVAL"`
@@ -21,6 +25,7 @@ type Config struct {
 	Restore       bool          `env:"RESTORE"`
 	Key           string        `env:"KEY"`
 	PgConnString  string        `env:"DATABASE_DSN"`
+	StorageType   int
 }
 
 func NewCfg(args ...string) *Config {
@@ -36,6 +41,12 @@ func NewCfg(args ...string) *Config {
 		if arg == WithEnv {
 			cfg.parseFromEnv()
 		}
+	}
+
+	if haveDBConnection := cfg.PgConnString != ""; haveDBConnection {
+		cfg.StorageType = InDB
+	} else {
+		cfg.StorageType = InMemory
 	}
 
 	return cfg
