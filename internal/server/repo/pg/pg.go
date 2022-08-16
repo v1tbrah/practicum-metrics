@@ -47,10 +47,11 @@ func (p *pgStorage) GetMetric(ID string) (metric.Metrics, bool, error) {
 	var value sql.NullFloat64
 	err := row.Scan(&thisMetric.ID, &thisMetric.MType, &delta, &value)
 	if err != nil {
-		return thisMetric, false, err
-	}
-	if metricNotFound := thisMetric.ID == ""; metricNotFound {
-		return thisMetric, false, nil
+		if err == sql.ErrNoRows {
+			return thisMetric, false, nil
+		} else {
+			return thisMetric, false, err
+		}
 	}
 
 	if thisMetric.MType == "gauge" && value.Valid {
