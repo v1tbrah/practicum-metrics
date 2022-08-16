@@ -67,7 +67,7 @@ func (a *api) getMetricValueHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	} else if !ok {
-		log.Println(err.Error())
+		log.Println(ErrMetricNotFound.Error())
 		http.Error(w, ErrMetricNotFound.Error(), http.StatusNotFound)
 		return
 	}
