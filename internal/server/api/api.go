@@ -3,6 +3,7 @@ package api
 import (
 	"github.com/v1tbrah/metricsAndAlerting/internal/server/config"
 	"github.com/v1tbrah/metricsAndAlerting/internal/server/repo/memory"
+	"github.com/v1tbrah/metricsAndAlerting/internal/server/repo/pg"
 	"log"
 	"net/http"
 	"os"
@@ -52,6 +53,9 @@ func (a *api) Run() {
 		} else {
 			log.Println("Data saved in file.")
 		}
+	} else if a.service.Cfg.StorageType == config.InDB {
+		inDBStorage, _ := a.service.Storage.(*pg.PgStorage)
+		inDBStorage.CloseConnection()
 	}
 	log.Println("API exits normally.")
 	os.Exit(0)

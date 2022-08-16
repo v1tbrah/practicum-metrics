@@ -9,13 +9,13 @@ import (
 	"log"
 )
 
-type pgStorage struct {
+type PgStorage struct {
 	Data   *model.Data
 	dbPool *pgxpool.Pool
 }
 
 // New returns new postgres storage.
-func New(pgConn string) *pgStorage {
+func New(pgConn string) *PgStorage {
 
 	dbPool, err := pgxpool.Connect(context.Background(), pgConn)
 	if err != nil {
@@ -27,7 +27,7 @@ func New(pgConn string) *pgStorage {
 		"CREATE TABLE IF NOT EXISTS metrics ( "+
 			"id varchar(255) PRIMARY KEY, "+
 			"type  varchar(30) NOT NULL, "+
-			"delta integer, "+
+			"delta bigint, "+
 			"value double PRECISION "+
 			")")
 
@@ -35,10 +35,10 @@ func New(pgConn string) *pgStorage {
 		log.Fatalln("Creating table Metrics. Error. Reason:", err)
 	}
 
-	return &pgStorage{Data: model.NewData(), dbPool: dbPool}
+	return &PgStorage{Data: model.NewData(), dbPool: dbPool}
 }
 
-func (p *pgStorage) GetMetric(ID string) (metric.Metrics, bool, error) {
+func (p *PgStorage) GetMetric(ID string) (metric.Metrics, bool, error) {
 	thisMetric := metric.Metrics{}
 
 	row := p.dbPool.QueryRow(context.Background(), "SELECT id, type, delta, value FROM metrics WHERE id=$1", ID)
@@ -63,7 +63,7 @@ func (p *pgStorage) GetMetric(ID string) (metric.Metrics, bool, error) {
 	return thisMetric, true, nil
 }
 
-func (p *pgStorage) SetMetric(ID string, thisMetric metric.Metrics) error {
+func (p *PgStorage) SetMetric(ID string, thisMetric metric.Metrics) error {
 
 	ctx := context.Background()
 	tx, err := p.dbPool.Begin(ctx)
@@ -85,7 +85,7 @@ func (p *pgStorage) SetMetric(ID string, thisMetric metric.Metrics) error {
 	return nil
 }
 
-func (p *pgStorage) GetData() (*model.Data, error) {
+func (p *PgStorage) GetData() (*model.Data, error) {
 	dataFromStorage, err := p.dataFromStorage()
 	if err != nil {
 		return nil, err
@@ -93,7 +93,7 @@ func (p *pgStorage) GetData() (*model.Data, error) {
 	return dataFromStorage, nil
 }
 
-func (p *pgStorage) dataFromStorage() (*model.Data, error) {
+func (p *PgStorage) dataFromStorage() (*model.Data, error) {
 	rows, err := p.dbPool.Query(context.Background(),
 		"SELECT "+
 			"id, "+
@@ -125,4 +125,8 @@ func (p *pgStorage) dataFromStorage() (*model.Data, error) {
 		return nil, err
 	}
 	return newData, nil
+}
+
+func (p *PgStorage) CloseConnection() {
+	p.dbPool.Close()
 }
