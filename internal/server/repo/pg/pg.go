@@ -74,7 +74,7 @@ func (p *pgStorage) SetMetric(ID string, thisMetric metric.Metrics) error {
 		return err
 	}
 	if _, err = tx.Exec(ctx, "INSERT INTO metrics (id, type, delta, value) values ($1, $2, $3, $4)",
-		ID, thisMetric.MType, thisMetric.Delta, thisMetric.Value); err != nil {
+		ID, thisMetric.MType, thisMetric.Delta, thisMetric.Value); err != nil && err != sql.ErrNoRows {
 		tx.Rollback(ctx)
 		return err
 	}
