@@ -69,12 +69,14 @@ func (p *pgStorage) SetMetric(ID string, thisMetric metric.Metrics) error {
 	if err != nil {
 		return err
 	}
-	if _, err = tx.Exec(ctx, "DELETE FROM metrics WHERE id=$1", ID); err != nil {
+	if _, err = tx.Exec(ctx, "DELETE FROM metrics WHERE id=$1", ID); err != nil && err != sql.ErrNoRows {
+		log.Println("#1", err)
 		tx.Rollback(ctx)
 		return err
 	}
 	if _, err = tx.Exec(ctx, "INSERT INTO metrics (id, type, delta, value) values ($1, $2, $3, $4)",
 		ID, thisMetric.MType, thisMetric.Delta, thisMetric.Value); err != nil && err != sql.ErrNoRows {
+		log.Println("#2", err)
 		tx.Rollback(ctx)
 		return err
 	}
