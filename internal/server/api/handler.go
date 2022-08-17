@@ -163,6 +163,7 @@ func fillListMetricsFromRequestBody(listMetrics *[]metric.Metrics, requestBody i
 		return http.StatusBadRequest, err
 	}
 	if err = json.Unmarshal(body, listMetrics); err != nil {
+		fmt.Println("#1", err)
 		return http.StatusBadRequest, err
 	}
 	return 0, nil

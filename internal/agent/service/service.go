@@ -103,10 +103,10 @@ func (s *service) reportListMetrics(listMetrics []metric.Metrics) (*resty.Respon
 	}
 	for i, curr := range listMetrics {
 		if curr.ID == "" {
-			return nil, errors.New(fmt.Sprintf("Metric %d: id is empty", i))
+			return nil, fmt.Errorf("metric %d: id is empty", i)
 		}
 		if !curr.TypeIsValid() {
-			return nil, errors.New(fmt.Sprintf("Metric %d: invalid type of metric", i))
+			return nil, fmt.Errorf("metric %d: invalid type of metric", i)
 		}
 	}
 
