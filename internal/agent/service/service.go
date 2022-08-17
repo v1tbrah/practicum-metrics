@@ -64,14 +64,11 @@ func (s *service) reportData() {
 	for {
 		<-ticker.C
 		s.data.Lock()
-		allMetrics := []metric.Metrics{}
 		for _, currMetric := range s.data.Metrics {
-			//if _, err := s.reportMetric(currMetric); err != nil {
-			//	log.Printf("Error report metric. Metric ID: %s. Reason: %s", currMetric.ID, err.Error())
-			//}
-			allMetrics = append(allMetrics, currMetric)
+			if _, err := s.reportMetric(currMetric); err != nil {
+				log.Printf("Error report metric. Metric ID: %s. Reason: %s", currMetric.ID, err.Error())
+			}
 		}
-		s.reportListMetrics(allMetrics)
 		s.data.Unlock()
 		log.Println("All metrics reported.")
 	}
@@ -101,6 +98,9 @@ func (s *service) reportMetric(metricForReport metric.Metrics) (*resty.Response,
 
 func (s *service) reportListMetrics(listMetrics []metric.Metrics) (*resty.Response, error) {
 
+	if len(listMetrics) == 0 {
+		return nil, errors.New("list metrics is empty")
+	}
 	for i, curr := range listMetrics {
 		if curr.ID == "" {
 			return nil, errors.New(fmt.Sprintf("Metric %d: id is empty", i))
