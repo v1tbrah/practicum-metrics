@@ -67,6 +67,9 @@ func (a *api) updateListMetricsHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
+		if !isExists {
+			metricForUpd = metric.NewMetric(metricFromRequest.ID, metricFromRequest.MType)
+		}
 		if metricForUpd.MType == "gauge" {
 			var value float64
 			if isExists {
