@@ -4,9 +4,10 @@ import (
 	"context"
 	"database/sql"
 	"github.com/jackc/pgx/v4/pgxpool"
+	"log"
+
 	"github.com/v1tbrah/metricsAndAlerting/internal/server/model"
 	"github.com/v1tbrah/metricsAndAlerting/pkg/metric"
-	"log"
 )
 
 type PgStorage struct {

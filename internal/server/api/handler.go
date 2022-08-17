@@ -94,9 +94,7 @@ func (a *api) updateListMetricsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp, _ := json.Marshal(&listMetricsForUpdate)
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(resp)
+	w.Write([]byte(""))
 }
 
 func (a *api) getMetricValueHandler(w http.ResponseWriter, r *http.Request) {

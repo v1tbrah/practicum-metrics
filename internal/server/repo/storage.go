@@ -2,12 +2,13 @@ package repo
 
 import (
 	"errors"
+	"strings"
+
 	"github.com/v1tbrah/metricsAndAlerting/internal/server/config"
 	"github.com/v1tbrah/metricsAndAlerting/internal/server/model"
 	"github.com/v1tbrah/metricsAndAlerting/internal/server/repo/memory"
 	"github.com/v1tbrah/metricsAndAlerting/internal/server/repo/pg"
 	"github.com/v1tbrah/metricsAndAlerting/pkg/metric"
-	"strings"
 )
 
 var ErrEmptyConfig = errors.New("empty config")

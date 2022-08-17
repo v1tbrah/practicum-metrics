@@ -1,9 +1,6 @@
 package api
 
 import (
-	"github.com/v1tbrah/metricsAndAlerting/internal/server/config"
-	"github.com/v1tbrah/metricsAndAlerting/internal/server/repo/memory"
-	"github.com/v1tbrah/metricsAndAlerting/internal/server/repo/pg"
 	"log"
 	"net/http"
 	"os"
@@ -13,6 +10,9 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 
+	"github.com/v1tbrah/metricsAndAlerting/internal/server/config"
+	"github.com/v1tbrah/metricsAndAlerting/internal/server/repo/memory"
+	"github.com/v1tbrah/metricsAndAlerting/internal/server/repo/pg"
 	"github.com/v1tbrah/metricsAndAlerting/internal/server/service"
 )
 

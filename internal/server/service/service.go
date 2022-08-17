@@ -1,11 +1,12 @@
 package service
 
 import (
+	"log"
+	"time"
+
 	"github.com/v1tbrah/metricsAndAlerting/internal/server/config"
 	"github.com/v1tbrah/metricsAndAlerting/internal/server/repo"
 	"github.com/v1tbrah/metricsAndAlerting/internal/server/repo/memory"
-	"log"
-	"time"
 )
 
 type Service struct {

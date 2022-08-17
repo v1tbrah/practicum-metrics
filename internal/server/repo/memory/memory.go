@@ -3,11 +3,13 @@ package memory
 import (
 	"encoding/json"
 	"errors"
-	"github.com/v1tbrah/metricsAndAlerting/internal/server/model"
-	"github.com/v1tbrah/metricsAndAlerting/pkg/metric"
+
 	"io"
 	"log"
 	"os"
+
+	"github.com/v1tbrah/metricsAndAlerting/internal/server/model"
+	"github.com/v1tbrah/metricsAndAlerting/pkg/metric"
 )
 
 type MemStorage struct {
