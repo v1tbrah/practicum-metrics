@@ -152,6 +152,7 @@ func fillMetricFromRequestBody(metric *metric.Metrics, requestBody io.ReadCloser
 		return http.StatusBadRequest, err
 	}
 	if err = json.Unmarshal(body, metric); err != nil {
+		log.Println("DEBUG #1", err)
 		return http.StatusBadRequest, err
 	}
 	return 0, nil
@@ -163,7 +164,7 @@ func fillListMetricsFromRequestBody(listMetrics *[]metric.Metrics, requestBody i
 		return http.StatusBadRequest, err
 	}
 	if err = json.Unmarshal(body, listMetrics); err != nil {
-		fmt.Println("#1", err)
+		log.Println("DEBUG #2", err)
 		return http.StatusBadRequest, err
 	}
 	return 0, nil

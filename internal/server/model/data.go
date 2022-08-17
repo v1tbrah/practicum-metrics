@@ -2,6 +2,7 @@ package model
 
 import (
 	"encoding/json"
+	"log"
 	"sync"
 
 	"github.com/v1tbrah/metricsAndAlerting/pkg/metric"
@@ -27,6 +28,7 @@ func (d *Data) MarshalJSON() ([]byte, error) {
 
 func (d *Data) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &d.Metrics); err != nil {
+		log.Println("DEBUG #3", err)
 		return err
 	}
 	return nil

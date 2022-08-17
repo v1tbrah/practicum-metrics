@@ -64,11 +64,14 @@ func (s *service) reportData() {
 	for {
 		<-ticker.C
 		s.data.Lock()
+		//list := []metric.Metrics{}
 		for _, currMetric := range s.data.Metrics {
 			if _, err := s.reportMetric(currMetric); err != nil {
 				log.Printf("Error report metric. Metric ID: %s. Reason: %s", currMetric.ID, err.Error())
 			}
+			//list = append(list, currMetric)
 		}
+		//s.reportListMetrics(list)
 		s.data.Unlock()
 		log.Println("All metrics reported.")
 	}
