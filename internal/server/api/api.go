@@ -71,6 +71,7 @@ func (a *api) newRouter() chi.Router {
 	r.Get("/", a.getPageHandler())
 	r.Get("/ping", a.checkDBConnHandler())
 	r.Post("/update/", a.updateMetricHandler)
+	r.Post("/updates/", a.updateListMetricsHandler)
 	r.Post("/value/", a.getMetricValueHandler)
 	r.Post("/update/{type}/{metric}/{val}", a.updateMetricHandlerPathParams())
 	r.Get("/value/{type}/{metric}", a.getMetricValueHandlerPathParams())

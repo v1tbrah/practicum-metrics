@@ -21,6 +21,7 @@ func New(pgConn string) *PgStorage {
 	if err != nil {
 		log.Fatalln("Unable to connect to database:", err)
 	}
+
 	//defer dbPool.Close() TODO
 
 	_, err = dbPool.Exec(context.Background(),
@@ -71,18 +72,41 @@ func (p *PgStorage) SetMetric(ID string, thisMetric metric.Metrics) error {
 		return err
 	}
 	if _, err = tx.Exec(ctx, "DELETE FROM metrics WHERE id=$1", ID); err != nil && err != sql.ErrNoRows {
-		log.Println("#1", err)
 		tx.Rollback(ctx)
 		return err
 	}
 	if _, err = tx.Exec(ctx, "INSERT INTO metrics (id, type, delta, value) values ($1, $2, $3, $4)",
 		ID, thisMetric.MType, thisMetric.Delta, thisMetric.Value); err != nil && err != sql.ErrNoRows {
-		log.Println("#2", err)
 		tx.Rollback(ctx)
 		return err
 	}
 	tx.Commit(ctx)
 	return nil
+}
+
+func (p *PgStorage) SetListMetrics(listMetrics []metric.Metrics) error {
+	ctx := context.Background()
+
+	tx, err := p.dbPool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+
+	for _, currMetric := range listMetrics {
+		if _, err = tx.Exec(ctx,
+			`INSERT INTO metrics
+					(id, type, delta, value)
+				VALUES ($1, $2, $3, $4)
+				ON CONFLICT (id) DO UPDATE SET
+					id=$5, type=$6, delta=$7, value=$8`,
+			currMetric.ID, currMetric.MType, currMetric.Delta, currMetric.Value,
+			currMetric.ID, currMetric.MType, currMetric.Delta, currMetric.Value); err != nil {
+			return err
+		}
+	}
+
+	return tx.Commit(ctx)
 }
 
 func (p *PgStorage) GetData() (*model.Data, error) {

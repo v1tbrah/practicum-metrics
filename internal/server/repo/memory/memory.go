@@ -30,6 +30,12 @@ func (m *MemStorage) SetMetric(ID string, thisMetric metric.Metrics) error {
 	return nil
 }
 
+func (m *MemStorage) SetListMetrics(listMetrics []metric.Metrics) error {
+	for _, currMetric := range listMetrics {
+		m.Data.Metrics[currMetric.ID] = currMetric
+	}
+	return nil
+}
 func (m *MemStorage) GetData() (*model.Data, error) {
 	return m.Data, nil
 }

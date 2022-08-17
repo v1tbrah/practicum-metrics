@@ -1,6 +1,7 @@
 package service
 
 import (
+	"github.com/v1tbrah/metricsAndAlerting/pkg/metric"
 	"net/http"
 	"testing"
 
@@ -42,6 +43,57 @@ func Test_service_reportMetric(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			serviceData := myService.data.Metrics
 			resp, err := myService.reportMetric(serviceData[tt.MID])
+			if tt.wantErr {
+				require.NotNil(t, err)
+				return
+			}
+			require.Nil(t, err)
+			assert.Equal(t, resp.RawResponse.StatusCode, tt.expectedStatus)
+		})
+	}
+}
+
+func Test_service_reportListMetrics(t *testing.T) {
+
+	cfg := config.NewCfg()
+	myService := NewService(cfg)
+
+	API := mockapi.NewAPI(myService.cfg.ServerAddr, myService.data)
+	defer API.Server.Close()
+
+	gaugeValue := 2.0
+
+	tests := []struct {
+		name           string
+		Metrics        []metric.Metrics
+		expectedStatus int
+		wantErr        bool
+	}{
+		{
+			name: "TestOK",
+			Metrics: []metric.Metrics{
+				{
+					ID:    "Alloc",
+					MType: "gauge",
+					Delta: nil,
+					Value: &gaugeValue,
+					Hash:  "",
+				},
+				{
+					ID:    "Malloc",
+					MType: "gauge",
+					Delta: nil,
+					Value: &gaugeValue,
+					Hash:  "",
+				},
+			},
+			expectedStatus: http.StatusOK,
+			wantErr:        false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resp, err := myService.reportListMetrics(tt.Metrics)
 			if tt.wantErr {
 				require.NotNil(t, err)
 				return

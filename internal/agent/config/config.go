@@ -14,13 +14,13 @@ const (
 )
 
 type Config struct {
-	ServerAddr      string        `env:"ADDRESS"`
-	PollInterval    time.Duration `env:"POLL_INTERVAL"`
-	ReportInterval  time.Duration `env:"REPORT_INTERVAL"`
-	Key             string        `env:"KEY"`
-	PgConnStr       string        `env:"DATABASE_DSN"`
-	ReportMetricURL string
-	GetMetricURL    string
+	ServerAddr           string        `env:"ADDRESS"`
+	PollInterval         time.Duration `env:"POLL_INTERVAL"`
+	ReportInterval       time.Duration `env:"REPORT_INTERVAL"`
+	Key                  string        `env:"KEY"`
+	ReportMetricURL      string
+	ReportListMetricsURL string
+	GetMetricURL         string
 }
 
 func NewCfg(args ...string) *Config {
@@ -40,6 +40,7 @@ func NewCfg(args ...string) *Config {
 	}
 
 	cfg.ReportMetricURL = "http://" + cfg.ServerAddr + "/update/"
+	cfg.ReportListMetricsURL = "http://" + cfg.ServerAddr + "/updates/"
 	cfg.GetMetricURL = "http://" + cfg.ServerAddr + "/update/"
 
 	return cfg
@@ -51,7 +52,6 @@ func (c *Config) parseFromOsArgs() {
 	flag.DurationVar(&c.PollInterval, "p", c.PollInterval, "interval for updating metrics")
 	flag.DurationVar(&c.ReportInterval, "r", c.ReportInterval, "interval for report metrics to server")
 	flag.StringVar(&c.Key, "k", c.Key, "secret key for hash calculation")
-	flag.StringVar(&c.PgConnStr, "d", c.PgConnStr, "postgres connection string")
 
 	if !flag.Parsed() {
 		flag.Parse()

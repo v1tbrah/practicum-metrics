@@ -48,6 +48,57 @@ func (a *api) updateMetricHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (a *api) updateListMetricsHandler(w http.ResponseWriter, r *http.Request) {
+
+	listMetricsFromRequest := []metric.Metrics{}
+	if statusCode, err := fillListMetricsFromRequestBody(&listMetricsFromRequest, r.Body); err != nil {
+		http.Error(w, err.Error(), statusCode)
+		return
+	}
+
+	listMetricsForUpdate := []metric.Metrics{}
+	for _, metricFromRequest := range listMetricsFromRequest {
+		if statusCode, err := a.checkValidMetricFromRequest(&metricFromRequest, "update"); err != nil {
+			http.Error(w, err.Error(), statusCode)
+			return
+		}
+		metricForUpd, isExists, err := a.service.Storage.GetMetric(metricFromRequest.ID)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		if metricForUpd.MType == "gauge" {
+			var value float64
+			if isExists {
+				value = *metricFromRequest.Value
+			}
+			*metricForUpd.Value = value
+		} else if metricForUpd.MType == "counter" {
+			var delta int64
+			if isExists {
+				delta = *metricFromRequest.Delta
+			}
+			*metricForUpd.Delta += delta
+		}
+
+		if a.service.Cfg.Key != "" {
+			if err = metricForUpd.UpdateHash(a.service.Cfg.Key); err != nil {
+				log.Println(err)
+			}
+		}
+		listMetricsForUpdate = append(listMetricsForUpdate, metricForUpd)
+	}
+
+	if err := a.service.Storage.SetListMetrics(listMetricsForUpdate); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	resp, _ := json.Marshal(&listMetricsForUpdate)
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(resp)
+}
+
 func (a *api) getMetricValueHandler(w http.ResponseWriter, r *http.Request) {
 	metricFromRequest := &metric.Metrics{}
 	if statusCode, err := fillMetricFromRequestBody(metricFromRequest, r.Body); err != nil {
@@ -101,6 +152,17 @@ func fillMetricFromRequestBody(metric *metric.Metrics, requestBody io.ReadCloser
 		return http.StatusBadRequest, err
 	}
 	if err = json.Unmarshal(body, metric); err != nil {
+		return http.StatusBadRequest, err
+	}
+	return 0, nil
+}
+
+func fillListMetricsFromRequestBody(listMetrics *[]metric.Metrics, requestBody io.ReadCloser) (int, error) {
+	body, err := io.ReadAll(requestBody)
+	if err != nil && err != io.EOF {
+		return http.StatusBadRequest, err
+	}
+	if err = json.Unmarshal(body, listMetrics); err != nil {
 		return http.StatusBadRequest, err
 	}
 	return 0, nil

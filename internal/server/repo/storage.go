@@ -16,6 +16,7 @@ type Storage interface {
 	GetData() (*model.Data, error)
 	GetMetric(ID string) (metric.Metrics, bool, error)
 	SetMetric(ID string, thisMetric metric.Metrics) error
+	SetListMetrics([]metric.Metrics) error
 }
 
 func New(cfg *config.Config) (Storage, error) {

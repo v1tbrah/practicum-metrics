@@ -3,6 +3,7 @@ package service
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"math/rand"
 	"os"
@@ -63,11 +64,14 @@ func (s *service) reportData() {
 	for {
 		<-ticker.C
 		s.data.Lock()
+		allMetrics := []metric.Metrics{}
 		for _, currMetric := range s.data.Metrics {
-			if _, err := s.reportMetric(currMetric); err != nil {
-				log.Printf("Error report metric. Metric ID: %s. Reason: %s", currMetric.ID, err.Error())
-			}
+			//if _, err := s.reportMetric(currMetric); err != nil {
+			//	log.Printf("Error report metric. Metric ID: %s. Reason: %s", currMetric.ID, err.Error())
+			//}
+			allMetrics = append(allMetrics, currMetric)
 		}
+		s.reportListMetrics(allMetrics)
 		s.data.Unlock()
 		log.Println("All metrics reported.")
 	}
@@ -91,6 +95,30 @@ func (s *service) reportMetric(metricForReport metric.Metrics) (*resty.Response,
 		SetHeader("Content-Type", "application/json").
 		SetBody(body).
 		Post(s.cfg.ReportMetricURL)
+
+	return resp, err
+}
+
+func (s *service) reportListMetrics(listMetrics []metric.Metrics) (*resty.Response, error) {
+
+	for i, curr := range listMetrics {
+		if curr.ID == "" {
+			return nil, errors.New(fmt.Sprintf("Metric %d: id is empty", i))
+		}
+		if !curr.TypeIsValid() {
+			return nil, errors.New(fmt.Sprintf("Metric %d: invalid type of metric", i))
+		}
+	}
+
+	body, err := json.Marshal(listMetrics)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := s.client.NewRequest().
+		SetHeader("Content-Type", "application/json").
+		SetBody(body).
+		Post(s.cfg.ReportListMetricsURL)
 
 	return resp, err
 }
