@@ -71,17 +71,9 @@ func (a *api) updateListMetricsHandler(w http.ResponseWriter, r *http.Request) {
 			metricForUpd = metric.NewMetric(metricFromRequest.ID, metricFromRequest.MType)
 		}
 		if metricForUpd.MType == "gauge" {
-			var value float64
-			if isExists {
-				value = *metricFromRequest.Value
-			}
-			*metricForUpd.Value = value
+			*metricForUpd.Value = *metricFromRequest.Value
 		} else if metricForUpd.MType == "counter" {
-			var delta int64
-			if isExists {
-				delta = *metricFromRequest.Delta
-			}
-			*metricForUpd.Delta += delta
+			*metricForUpd.Delta += *metricFromRequest.Delta
 		}
 
 		if a.service.Cfg.Key != "" {
