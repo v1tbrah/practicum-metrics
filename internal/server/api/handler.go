@@ -57,6 +57,7 @@ func (a *api) updateListMetricsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	listMetricsForUpdate := []metric.Metrics{}
+	counterMetrics := map[string]metric.Metrics{}
 	for _, metricFromRequest := range listMetricsFromRequest {
 		if statusCode, err := a.checkValidMetricFromRequest(&metricFromRequest, "update"); err != nil {
 			http.Error(w, err.Error(), statusCode)
@@ -73,7 +74,12 @@ func (a *api) updateListMetricsHandler(w http.ResponseWriter, r *http.Request) {
 		if metricForUpd.MType == "gauge" {
 			*metricForUpd.Value = *metricFromRequest.Value
 		} else if metricForUpd.MType == "counter" {
+			counterMetric, ok := counterMetrics[metricForUpd.ID]
+			if ok {
+				metricForUpd = counterMetric
+			}
 			*metricForUpd.Delta += *metricFromRequest.Delta
+			counterMetrics[metricForUpd.ID] = metricForUpd
 		}
 
 		if a.service.Cfg.Key != "" {
