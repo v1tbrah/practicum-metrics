@@ -14,8 +14,14 @@ import (
 
 func Test_service_reportMetric(t *testing.T) {
 
-	cfg := config.NewCfg()
-	myService := NewService(cfg)
+	cfg, err := config.New()
+	if err != nil {
+		panic(err)
+	}
+	myService, err := New(cfg)
+	if err != nil {
+		panic(err)
+	}
 
 	API := mockapi.NewAPI(myService.cfg.ServerAddr, myService.data)
 	defer API.Server.Close()
@@ -55,8 +61,14 @@ func Test_service_reportMetric(t *testing.T) {
 
 func Test_service_reportListMetrics(t *testing.T) {
 
-	cfg := config.NewCfg()
-	myService := NewService(cfg)
+	cfg, err := config.New()
+	if err != nil {
+		panic(err)
+	}
+	myService, err := New(cfg)
+	if err != nil {
+		panic(err)
+	}
 
 	API := mockapi.NewAPI(myService.cfg.ServerAddr, myService.data)
 	defer API.Server.Close()
@@ -106,8 +118,14 @@ func Test_service_reportListMetrics(t *testing.T) {
 
 func Test_service_getMetric(t *testing.T) {
 
-	cfg := config.NewCfg()
-	myService := NewService(cfg)
+	cfg, err := config.New()
+	if err != nil {
+		panic(err)
+	}
+	myService, err := New(cfg)
+	if err != nil {
+		panic(err)
+	}
 
 	API := mockapi.NewAPI(myService.cfg.ServerAddr, myService.data)
 	defer API.Server.Close()

@@ -2,54 +2,64 @@ package config
 
 import (
 	"flag"
-	"log"
 	"time"
 
 	"github.com/caarlos0/env/v6"
 )
 
 const (
-	WithFlag = "withFlag"
-	WithEnv  = "withEnv"
+	WithDebug = "withDebug"
+	WithFlag  = "withFlag"
+	WithEnv   = "withEnv"
 )
 
 const (
-	InMemory = iota
-	InDB
+	StorageTypeMemory = iota
+	StorageTypeDB
 )
 
 type Config struct {
-	Addr          string        `env:"ADDRESS"`
+	Addr string `env:"ADDRESS"`
+
+	StorageType int
+
+	PgConnString string `env:"DATABASE_DSN"`
+
 	StoreInterval time.Duration `env:"STORE_INTERVAL"`
 	StoreFile     string        `env:"STORE_FILE"`
 	Restore       bool          `env:"RESTORE"`
-	Key           string        `env:"KEY"`
-	PgConnString  string        `env:"DATABASE_DSN"`
-	StorageType   int
+
+	HashKey string `env:"KEY"`
+
+	Debug bool
 }
 
-func NewCfg(args ...string) *Config {
+func New(args ...string) (*Config, error) {
 	cfg := &Config{
 		Addr:          "127.0.0.1:8080",
 		StoreInterval: time.Second * 300,
 		Restore:       true}
 
 	for _, arg := range args {
-		if arg == WithFlag {
+		switch arg {
+		case WithDebug:
+			cfg.Debug = true
+		case WithFlag:
 			cfg.parseFromOsArgs()
-		}
-		if arg == WithEnv {
-			cfg.parseFromEnv()
+		case WithEnv:
+			if err := cfg.parseFromEnv(); err != nil {
+				return nil, err
+			}
 		}
 	}
 
 	if haveDBConnection := cfg.PgConnString != ""; haveDBConnection {
-		cfg.StorageType = InDB
+		cfg.StorageType = StorageTypeDB
 	} else {
-		cfg.StorageType = InMemory
+		cfg.StorageType = StorageTypeMemory
 	}
 
-	return cfg
+	return cfg, nil
 }
 
 func (c *Config) parseFromOsArgs() {
@@ -58,15 +68,12 @@ func (c *Config) parseFromOsArgs() {
 	flag.DurationVar(&c.StoreInterval, "i", c.StoreInterval, "interval for writing metrics to a file")
 	flag.StringVar(&c.StoreFile, "f", c.StoreFile, "path to persistent file storage")
 	flag.BoolVar(&c.Restore, "r", c.Restore, "flag for loading metrics from a file at the start of the api")
-	flag.StringVar(&c.Key, "k", c.Key, "secret key for hash calculation")
+	flag.StringVar(&c.HashKey, "k", c.HashKey, "secret key for hash calculation")
 	flag.StringVar(&c.PgConnString, "d", c.PgConnString, "postgres db conn string")
 
 	flag.Parse()
 }
 
-func (c *Config) parseFromEnv() {
-	err := env.Parse(c)
-	if err != nil {
-		log.Println(err)
-	}
+func (c *Config) parseFromEnv() error {
+	return env.Parse(c)
 }

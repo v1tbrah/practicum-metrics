@@ -1,7 +1,8 @@
 package api
 
 import (
-	"log"
+	"context"
+	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/rs/zerolog/log"
 
 	"github.com/v1tbrah/metricsAndAlerting/internal/server/config"
 	"github.com/v1tbrah/metricsAndAlerting/internal/server/repo/memory"
@@ -21,8 +23,11 @@ type api struct {
 	service *service.Service
 }
 
-// NewAPI returns new API.
-func NewAPI(service *service.Service) *api {
+// New returns new API.
+func New(service *service.Service) *api {
+	log.Debug().Msg("api.New started")
+	log.Debug().Msg("api.New ended")
+
 	newAPI := &api{service: service}
 
 	newAPI.server = &http.Server{
@@ -35,30 +40,39 @@ func NewAPI(service *service.Service) *api {
 
 //Run API starts the API.
 func (a *api) Run() {
+	log.Debug().Msg("api.Run started")
+	log.Debug().Msg("api.Run ended")
 
-	log.Println("API started.")
 	exit := make(chan os.Signal, 1)
 	signal.Notify(exit, os.Interrupt, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
 
-	go func() {
-		log.Println(a.server.ListenAndServe())
-		defer a.server.Close()
-	}()
+	go a.StartListener()
 
 	<-exit
-	if a.service.Cfg.StorageType == config.InMemory {
-		inMemStorage, _ := a.service.Storage.(*memory.MemStorage)
-		if err := inMemStorage.StoreData(); err != nil {
-			log.Println(err)
+	if a.service.Cfg.StorageType == config.StorageTypeMemory {
+		memStorage, _ := a.service.Storage.(*memory.MemStorage)
+		if err := memStorage.StoreData(context.Background()); err != nil {
+			log.Error().
+				Err(err).
+				Str("storeFile", a.service.Cfg.StoreFile).
+				Msg("unable to store data in file")
 		} else {
-			log.Println("Data saved in file.")
+			log.Info().Msg(fmt.Sprintf("data saved to file: %s", a.service.Cfg.StoreFile))
 		}
-	} else if a.service.Cfg.StorageType == config.InDB {
-		inDBStorage, _ := a.service.Storage.(*pg.PgStorage)
-		inDBStorage.CloseConnection()
+	} else if a.service.Cfg.StorageType == config.StorageTypeDB {
+		DBStorage, _ := a.service.Storage.(*pg.PgStorage)
+		DBStorage.ClosePoolConn()
 	}
-	log.Println("API exits normally.")
+	log.Info().Msg("api ended")
 	os.Exit(0)
+}
+
+func (a *api) StartListener() {
+	log.Debug().Msg("api.StartListener started")
+	log.Debug().Msg("api.StartListener ended")
+
+	a.server.ListenAndServe()
+	defer a.server.Close()
 }
 
 func (a *api) newRouter() chi.Router {

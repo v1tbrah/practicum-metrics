@@ -3,90 +3,109 @@ package pg
 import (
 	"context"
 	"database/sql"
+	"errors"
+	"fmt"
+
+	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
-	"log"
+	"github.com/rs/zerolog/log"
 
 	"github.com/v1tbrah/metricsAndAlerting/internal/server/model"
 	"github.com/v1tbrah/metricsAndAlerting/pkg/metric"
 )
 
 type PgStorage struct {
-	Data   *model.Data
 	dbPool *pgxpool.Pool
 }
 
 // New returns new postgres storage.
-func New(pgConn string) *PgStorage {
+func New(pgConn string) (*PgStorage, error) {
+	log.Debug().Str("pgConn", pgConn).Msg("pg.New started")
+	defer log.Debug().Msg("pg.New ended")
 
-	dbPool, err := pgxpool.Connect(context.Background(), pgConn)
+	ctx := context.Background()
+	dbPool, err := pgxpool.Connect(ctx, pgConn)
 	if err != nil {
-		log.Fatalln("Unable to connect to database:", err)
+		return nil, err
 	}
 
-	//defer dbPool.Close() TODO
-
-	_, err = dbPool.Exec(context.Background(),
-		"CREATE TABLE IF NOT EXISTS metrics ( "+
-			"id varchar(255) PRIMARY KEY, "+
-			"type  varchar(30) NOT NULL, "+
-			"delta bigint, "+
-			"value double PRECISION "+
-			")")
+	_, err = dbPool.Exec(ctx,
+		`CREATE TABLE IF NOT EXISTS metrics (
+				id varchar(255) PRIMARY KEY, 
+				type  varchar(30) NOT NULL, 
+				delta bigint, 
+				value double PRECISION)`)
 
 	if err != nil {
-		log.Fatalln("Creating table Metrics. Error. Reason:", err)
+		return nil, err
 	}
 
-	return &PgStorage{Data: model.NewData(), dbPool: dbPool}
+	return &PgStorage{dbPool: dbPool}, nil
 }
 
-func (p *PgStorage) GetMetric(ID string) (metric.Metrics, bool, error) {
-	thisMetric := metric.Metrics{}
+func (p *PgStorage) GetMetric(ctx context.Context, ID string) (metric.Metrics, bool, error) {
+	log.Debug().Str("MID", ID).Msg("pg.GetMetric started")
+	defer log.Debug().Msg("pg.GetMetric ended")
 
-	row := p.dbPool.QueryRow(context.Background(), "SELECT id, type, delta, value FROM metrics WHERE id=$1", ID)
+	resultMetric := metric.Metrics{}
+
+	row := p.dbPool.QueryRow(ctx,
+		`SELECT
+				id,
+				type,
+				delta,
+				value
+			FROM
+				metrics
+			WHERE id=$1`,
+		ID)
 
 	var delta sql.NullInt64
 	var value sql.NullFloat64
-	err := row.Scan(&thisMetric.ID, &thisMetric.MType, &delta, &value)
+	err := row.Scan(&resultMetric.ID, &resultMetric.MType, &delta, &value)
 	if err != nil {
-		if err.Error() == "no rows in result set" {
-			return thisMetric, false, nil
+		if errors.Is(err, pgx.ErrNoRows) {
+			return resultMetric, false, nil
 		} else {
-			return thisMetric, false, err
+			return resultMetric, false, err
 		}
 	}
 
-	if thisMetric.MType == "gauge" && value.Valid {
-		thisMetric.Value = &value.Float64
-	} else if thisMetric.MType == "counter" && delta.Valid {
-		thisMetric.Delta = &delta.Int64
+	if resultMetric.MType == "gauge" && value.Valid {
+		resultMetric.Value = &value.Float64
+	} else if resultMetric.MType == "counter" && delta.Valid {
+		resultMetric.Delta = &delta.Int64
 	}
 
-	return thisMetric, true, nil
+	return resultMetric, true, nil
 }
 
-func (p *PgStorage) SetMetric(ID string, thisMetric metric.Metrics) error {
+func (p *PgStorage) SetMetric(ctx context.Context, thisMetric metric.Metrics) error {
+	log.Debug().Str("thisMetric", fmt.Sprint(thisMetric)).Msg("pg.SetMetric started")
+	defer log.Debug().Msg("pg.SetMetric ended")
 
-	ctx := context.Background()
 	tx, err := p.dbPool.Begin(ctx)
 	if err != nil {
 		return err
 	}
-	if _, err = tx.Exec(ctx, "DELETE FROM metrics WHERE id=$1", ID); err != nil && err != sql.ErrNoRows {
-		tx.Rollback(ctx)
+	defer tx.Rollback(ctx)
+
+	if _, err = tx.Exec(ctx,
+		`INSERT INTO metrics
+				(id, type, delta, value)
+			VALUES ($1, $2, $3, $4)
+			ON CONFLICT (id) DO UPDATE SET
+				id=$1, type=$2, delta=$3, value=$4`,
+		thisMetric.ID, thisMetric.MType, thisMetric.Delta, thisMetric.Value); err != nil {
 		return err
 	}
-	if _, err = tx.Exec(ctx, "INSERT INTO metrics (id, type, delta, value) values ($1, $2, $3, $4)",
-		ID, thisMetric.MType, thisMetric.Delta, thisMetric.Value); err != nil && err != sql.ErrNoRows {
-		tx.Rollback(ctx)
-		return err
-	}
-	tx.Commit(ctx)
-	return nil
+
+	return tx.Commit(ctx)
 }
 
-func (p *PgStorage) SetListMetrics(listMetrics []metric.Metrics) error {
-	ctx := context.Background()
+func (p *PgStorage) SetListMetrics(ctx context.Context, listMetrics []metric.Metrics) error {
+	log.Debug().Str("listMetrics", fmt.Sprint(listMetrics)).Msg("pg.SetListMetrics started")
+	defer log.Debug().Msg("pg.SetListMetrics ended")
 
 	tx, err := p.dbPool.Begin(ctx)
 	if err != nil {
@@ -100,8 +119,7 @@ func (p *PgStorage) SetListMetrics(listMetrics []metric.Metrics) error {
 					(id, type, delta, value)
 				VALUES ($1, $2, $3, $4)
 				ON CONFLICT (id) DO UPDATE SET
-					id=$5, type=$6, delta=$7, value=$8`,
-			currMetric.ID, currMetric.MType, currMetric.Delta, currMetric.Value,
+					id=$1, type=$2, delta=$3, value=$4`,
 			currMetric.ID, currMetric.MType, currMetric.Delta, currMetric.Value); err != nil {
 			return err
 		}
@@ -110,23 +128,18 @@ func (p *PgStorage) SetListMetrics(listMetrics []metric.Metrics) error {
 	return tx.Commit(ctx)
 }
 
-func (p *PgStorage) GetData() (*model.Data, error) {
-	dataFromStorage, err := p.dataFromStorage()
-	if err != nil {
-		return nil, err
-	}
-	return dataFromStorage, nil
-}
+func (p *PgStorage) GetData(ctx context.Context) (*model.Data, error) {
+	log.Debug().Msg("pg.GetData started")
+	defer log.Debug().Msg("pg.GetData ended")
 
-func (p *PgStorage) dataFromStorage() (*model.Data, error) {
-	rows, err := p.dbPool.Query(context.Background(),
-		"SELECT "+
-			"id, "+
-			"type, "+
-			"delta, "+
-			"value "+
-			"FROM "+
-			"metrics")
+	rows, err := p.dbPool.Query(ctx,
+		`SELECT
+				id, 
+				type, 
+				delta,
+				value 
+			FROM 
+				metrics`)
 	if err != nil {
 		return nil, err
 	}
@@ -149,9 +162,20 @@ func (p *PgStorage) dataFromStorage() (*model.Data, error) {
 	if err = rows.Err(); err != nil {
 		return nil, err
 	}
+
 	return newData, nil
 }
 
-func (p *PgStorage) CloseConnection() {
+func (p *PgStorage) Ping(ctx context.Context) error {
+	log.Debug().Msg("pg.Ping started")
+	defer log.Debug().Msg("pg.Ping ended")
+
+	return p.dbPool.Ping(ctx)
+}
+
+func (p *PgStorage) ClosePoolConn() {
+	log.Debug().Msg("pg.CloseConnection started")
+	defer log.Debug().Msg("pg.CloseConnection ended")
+
 	p.dbPool.Close()
 }

@@ -1,8 +1,12 @@
 package service
 
 import (
-	"log"
+	"context"
+	"errors"
+	"fmt"
 	"time"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/v1tbrah/metricsAndAlerting/internal/server/config"
 	"github.com/v1tbrah/metricsAndAlerting/internal/server/repo"
@@ -14,30 +18,43 @@ type Service struct {
 	Cfg     *config.Config
 }
 
-// NewService returns new Service.
-func NewService(storage repo.Storage, cfg *config.Config) *Service {
+// New returns new Service.
+func New(storage repo.Storage, cfg *config.Config) (*Service, error) {
+	log.Debug().
+		Str("storage", fmt.Sprint(storage)).
+		Str("cfg", fmt.Sprint(cfg)).
+		Msg("service.New started")
+	defer log.Debug().Msg("service.New ended")
+
 	service := &Service{Storage: storage, Cfg: cfg}
 
-	if cfg.StorageType == config.InMemory {
-
-		inMemStorage, _ := service.Storage.(*memory.MemStorage)
-		if service.Cfg.Restore {
+	if cfg.StorageType == config.StorageTypeMemory {
+		inMemStorage, ok := service.Storage.(*memory.MemStorage)
+		if !ok {
+			return nil, errors.New("type of storage is not *memory.MemStorage with StorageType == StorageTypeMemory")
+		}
+		if service.Cfg.Restore && service.Cfg.StoreFile != "" {
 			if err := inMemStorage.RestoreData(); err != nil {
-				log.Println(err)
-			} else {
-				log.Println("Metrics restored.")
+				return nil, fmt.Errorf("err restoring data: %w", err)
 			}
+			log.Info().Msg("data restored")
 		}
 
 		if intervalIsSet := service.Cfg.StoreInterval != time.Second*0; intervalIsSet {
-			go service.writeMetricsToFileWithInterval()
+			go service.writeMetricsToFileWithInterval(context.Background())
 		}
 	}
 
-	return service
+	return service, nil
 }
 
-func (s *Service) writeMetricsToFileWithInterval() {
+func (s *Service) writeMetricsToFileWithInterval(ctx context.Context) {
+	log.Debug().
+		Str("storeFile", s.Cfg.StoreFile).
+		Dur("storeInterval", s.Cfg.StoreInterval).
+		Msg("service.writeMetricsToFileWithInterval started")
+	defer log.Debug().Msg("service.writeMetricsToFileWithInterval ended")
+
 	if fileNameIsEmpty := s.Cfg.StoreFile == ""; fileNameIsEmpty {
 		return
 	}
@@ -48,10 +65,13 @@ func (s *Service) writeMetricsToFileWithInterval() {
 	inMemStorage, _ := s.Storage.(*memory.MemStorage)
 	for {
 		<-ticker.C
-		if err := inMemStorage.StoreData(); err != nil {
-			log.Println(err)
+		if err := inMemStorage.StoreData(ctx); err != nil {
+			log.Error().
+				Err(err).
+				Str("storeFile", s.Cfg.StoreFile).
+				Msg("unable to store data in file")
 		} else {
-			log.Println("Metrics saved to file:", s.Cfg.StoreFile)
+			log.Info().Msg(fmt.Sprintf("data saved to file: %s", s.Cfg.StoreFile))
 		}
 	}
 }

@@ -2,59 +2,21 @@ package api
 
 import (
 	"fmt"
+	"github.com/rs/zerolog/log"
 	"net/http"
 	"strconv"
 
 	"github.com/v1tbrah/metricsAndAlerting/pkg/metric"
 )
 
-func (a *api) updateMetricHandlerPathParams() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		metricFromRequest := &metric.Metrics{}
-		if statusCode, err := fillMetricFromPathParams(metricFromRequest, "update", r.URL.Path); err != nil {
-			http.Error(w, err.Error(), statusCode)
-			return
-		}
-
-		switch metricFromRequest.MType {
-		case "gauge":
-			a.updateGaugeMetric(metricFromRequest, w, r)
-		case "counter":
-			a.updateCounterMetric(metricFromRequest, w, r)
-		default:
-			http.Error(w, ErrMetricTypeNotImplemented.Error(), http.StatusNotImplemented)
-			return
-		}
-	}
-}
-
-func (a *api) getMetricValueHandlerPathParams() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		metricFromRequest := &metric.Metrics{}
-		if statusCode, err := fillMetricFromPathParams(metricFromRequest, "value", r.URL.Path); err != nil {
-			http.Error(w, err.Error(), statusCode)
-			return
-		}
-
-		metricLocal, ok, err := a.service.Storage.GetMetric(metricFromRequest.ID)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-		if !ok {
-			http.Error(w, ErrMetricNotFound.Error(), http.StatusNotFound)
-			return
-		}
-
-		if metricFromRequest.MType == "gauge" {
-			w.Write([]byte(fmt.Sprintf("%v", *metricLocal.Value)))
-		} else if metricFromRequest.MType == "counter" {
-			w.Write([]byte(fmt.Sprintf("%v", *metricLocal.Delta)))
-		}
-	}
-}
-
 func fillMetricFromPathParams(metric *metric.Metrics, handlerType, path string) (int, error) {
+	log.Debug().
+		Str("metric", fmt.Sprint(metric)).
+		Str("handlerType", handlerType).
+		Str("path", path).
+		Msg("api.fillMetricFromPathParams started")
+	log.Debug().Msg("api.fillMetricFromPathParams ended")
+
 	var pathInfo *pathInfo
 	if handlerType == "update" {
 		pathInfo = newInfoUpdateURL(path)
@@ -84,6 +46,12 @@ func fillMetricFromPathParams(metric *metric.Metrics, handlerType, path string) 
 }
 
 func fillMetricValueFromPathInfo(metric *metric.Metrics, pathInfo *pathInfo) (int, error) {
+	log.Debug().
+		Str("metric", fmt.Sprint(metric)).
+		Str("pathInfo", fmt.Sprint(pathInfo)).
+		Msg("api.fillMetricValueFromPathInfo started")
+	log.Debug().Msg("api.fillMetricValueFromPathInfo ended")
+
 	if pathInfo.valM == "" {
 		return http.StatusNotFound, ErrMetricValueNotSpecified
 	}

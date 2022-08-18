@@ -3,6 +3,8 @@ package service
 import (
 	"bytes"
 	"text/template"
+
+	"github.com/rs/zerolog/log"
 )
 
 const pageTpl = `
@@ -26,11 +28,17 @@ type dataForPage struct {
 
 // NewDataForPage returns new dataForPage.
 func NewDataForPage() *dataForPage {
+	log.Debug().Msg("service.NewDataForPage started")
+	defer log.Debug().Msg("service.NewDataForPage ended")
+
 	return &dataForPage{Title: "Data"}
 }
 
 // Page returns the completed start page template.
 func (m *dataForPage) Page() (string, error) {
+	log.Debug().Msg("service.Page started")
+	defer log.Debug().Msg("service.Page ended")
+
 	buf := &bytes.Buffer{}
 	t, err := template.New("webpage").Parse(pageTpl)
 	if err != nil {

@@ -1,22 +1,28 @@
 package memory
 
 import (
-	"log"
+	"errors"
+	"fmt"
 	"math/rand"
 	"reflect"
 	"runtime"
 	"sync"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/v1tbrah/metricsAndAlerting/pkg/metric"
 )
 
 type Data struct {
 	Metrics map[string]metric.Metrics
-	sync.Mutex
+	mu      sync.Mutex
 }
 
 // NewData returns all metrics.
 func NewData() *Data {
+	log.Debug().Msg("memory.NewData started")
+	defer log.Debug().Msg("memory.NewData ended")
+
 	return &Data{
 		Metrics: map[string]metric.Metrics{
 			"Alloc":         metric.NewMetric("Alloc", "gauge"),
@@ -54,14 +60,19 @@ func NewData() *Data {
 
 // Update updates all metrics.
 func (d *Data) Update(keyForUpdateHash string) {
-	d.Lock()
-	defer d.Unlock()
+	log.Debug().Msg("memory.Update started")
+	defer log.Debug().Msg("memory.Update ended")
+
+	d.mu.Lock()
+	defer d.mu.Unlock()
 	d.updateGaugeMetrics(keyForUpdateHash)
 	d.updateCounterMetrics(keyForUpdateHash)
-	log.Println("All metrics updated.")
 }
 
 func (d *Data) updateGaugeMetrics(keyForUpdateHash string) {
+	log.Debug().Msg("memory.updateGaugeMetrics started")
+	defer log.Debug().Msg("memory.updateGaugeMetrics ended")
+
 	metricsToUpdate := d.Metrics
 
 	runtimeStats := runtime.MemStats{}
@@ -92,8 +103,11 @@ func (d *Data) updateGaugeMetrics(keyForUpdateHash string) {
 		case uint8:
 			valueForUpd = float64(statValue)
 		default:
-			log.Println("unsupported metric type")
-			log.Fatalln("unsupported metric type")
+			log.Error().
+				Err(errors.New("unsupported type of metric")).
+				Str("MID", currMetric.ID).
+				Str("MType", fmt.Sprint(statValue)).
+				Msg("unable to update metric")
 		}
 		currMetric.Value = &valueForUpd
 		metricsToUpdate[name] = currMetric
@@ -107,7 +121,10 @@ func (d *Data) updateGaugeMetrics(keyForUpdateHash string) {
 	for _, currMetric := range metricsToUpdate {
 		if keyForUpdateHash != "" {
 			if err := currMetric.UpdateHash(keyForUpdateHash); err != nil {
-				log.Println(err.Error())
+				log.Error().
+					Err(err).
+					Str("MID", currMetric.ID).
+					Msg("unable to computing hash")
 			}
 		}
 	}
@@ -115,13 +132,19 @@ func (d *Data) updateGaugeMetrics(keyForUpdateHash string) {
 }
 
 func (d *Data) updateCounterMetrics(keyForUpdateHash string) {
+	log.Debug().Msg("memory.updateCounterMetrics started")
+	defer log.Debug().Msg("memory.updateCounterMetrics ended")
+
 	metricsToUpdate := d.Metrics
 
 	PollCount := metricsToUpdate["PollCount"]
 	*PollCount.Delta++
 	if keyForUpdateHash != "" {
 		if err := PollCount.UpdateHash(keyForUpdateHash); err != nil {
-			log.Println(err.Error())
+			log.Error().
+				Err(err).
+				Str("MID", PollCount.ID).
+				Msg("unable to computing hash")
 		}
 	}
 	metricsToUpdate["PollCount"] = PollCount
