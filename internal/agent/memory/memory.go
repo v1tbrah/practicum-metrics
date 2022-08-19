@@ -59,15 +59,15 @@ func New() *Memory {
 }
 
 // GetData return copy of data.
-func (d *Memory) GetData() (map[string]metric.Metrics) {
+func (d *Memory) GetData() map[string]metric.Metrics {
 	log.Debug().Msg("memory.GetData started")
 	defer log.Debug().Msg("memory.GetData ended")
-
-	result := map[string]metric.Metrics{}
 
 	d.mu.RLock()
 	defer d.mu.RUnlock()
 
+	result := make(map[string]metric.Metrics, len(d.data))
+	
 	for _, currMetric := range d.data {
 		metricForResult := metric.NewMetric(currMetric.ID, currMetric.MType)
 		if currMetric.MType == "gauge" {

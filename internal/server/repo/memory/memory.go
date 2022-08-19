@@ -36,8 +36,20 @@ func (m *Memory) GetMetric(ctx context.Context, ID string) (metric.Metrics, bool
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
-	thisMetric, ok := m.data[ID]
-	return thisMetric, ok, nil
+	currMetric, ok := m.data[ID]
+	if !ok {
+		return currMetric, ok, nil
+	}
+	resultMetric := metric.NewMetric(currMetric.ID, currMetric.MType)
+	if currMetric.MType == "gauge" {
+		valueForResult := *currMetric.Value
+		resultMetric.Value = &valueForResult
+	} else if currMetric.MType == "counter" {
+		deltaForResult := *currMetric.Delta
+		resultMetric.Delta = &deltaForResult
+	}
+
+	return resultMetric, ok, nil
 }
 
 func (m *Memory) SetMetric(ctx context.Context, thisMetric metric.Metrics) error {
@@ -71,7 +83,21 @@ func (m *Memory) GetData(ctx context.Context) (model.Data, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
-	return m.data, nil
+	result := make(model.Data, len(m.data))
+
+	for _, currMetric := range m.data {
+		metricForResult := metric.NewMetric(currMetric.ID, currMetric.MType)
+		if currMetric.MType == "gauge" {
+			valueForResult := *currMetric.Value
+			metricForResult.Value = &valueForResult
+		} else if currMetric.MType == "counter" {
+			deltaForResult := *currMetric.Delta
+			metricForResult.Delta = &deltaForResult
+		}
+		result[metricForResult.ID] = metricForResult
+	}
+
+	return result, nil
 }
 
 func (m *Memory) RestoreData() error {
