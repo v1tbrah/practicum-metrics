@@ -2,6 +2,7 @@ package api
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -17,8 +18,15 @@ import (
 
 func TestUpdateHandler(t *testing.T) {
 
-	myCfg := config.NewCfg()
-	testAPI := NewAPI(service.NewService(memory.NewStorage(), myCfg))
+	myCfg, err := config.New()
+	if err != nil {
+		panic(err)
+	}
+	myServ, err := service.New(memory.New(""), myCfg)
+	if err != nil {
+		panic(err)
+	}
+	testAPI := New(myServ)
 
 	localHost := "http://127.0.0.1:8080"
 
@@ -138,27 +146,37 @@ func updateBody(MName, MType string, Value float64, Delta int64) *bytes.Buffer {
 func TestGetValueHandler(t *testing.T) {
 
 	localHost := "http://127.0.0.1:8080"
+	ctx := context.Background()
 
-	myCfg := config.NewCfg()
-	testAPI := NewAPI(service.NewService(memory.NewStorage(), myCfg))
+	myCfg, err := config.New()
+	if err != nil {
+		panic(err)
+	}
+	myServ, err := service.New(memory.New(""), myCfg)
+	if err != nil {
+		panic(err)
+	}
+	testAPI := New(myServ)
 
 	gaugeValue := 2.22
-	testAPIWithAllocMetric := NewAPI(service.NewService(memory.NewStorage(), myCfg))
-	testAPIWithAllocMetric.service.MemStorage.Data.Store("Alloc", &metric.Metrics{
-		ID:    "Alloc",
-		MType: "gauge",
-		Delta: nil,
-		Value: &gaugeValue,
-	})
+	testAPIWithAllocMetric := testAPI
+	testAPIWithAllocMetric.service.Storage.SetMetric(ctx,
+		metric.Metrics{
+			ID:    "Alloc",
+			MType: "gauge",
+			Delta: nil,
+			Value: &gaugeValue,
+		})
 
 	counterValue := int64(2)
-	testAPIWithCounterMetric := NewAPI(service.NewService(memory.NewStorage(), myCfg))
-	testAPIWithCounterMetric.service.MemStorage.Data.Store("PollCount", &metric.Metrics{
-		ID:    "PollCount",
-		MType: "counter",
-		Delta: &counterValue,
-		Value: nil,
-	})
+	testAPIWithCounterMetric := testAPI
+	testAPIWithCounterMetric.service.Storage.SetMetric(ctx,
+		metric.Metrics{
+			ID:    "PollCount",
+			MType: "counter",
+			Delta: &counterValue,
+			Value: nil,
+		})
 
 	type args struct {
 		request *http.Request

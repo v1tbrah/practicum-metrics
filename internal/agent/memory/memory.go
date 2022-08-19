@@ -1,25 +1,30 @@
 package memory
 
 import (
-	"log"
+	"errors"
+	"fmt"
 	"math/rand"
 	"reflect"
 	"runtime"
 	"sync"
-	"time"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/v1tbrah/metricsAndAlerting/pkg/metric"
 )
 
-type Data struct {
-	Metrics map[string]metric.Metrics
-	sync.Mutex
+type Memory struct {
+	data map[string]metric.Metrics
+	mu   sync.RWMutex
 }
 
-// NewData returns all metrics.
-func NewData() *Data {
-	return &Data{
-		Metrics: map[string]metric.Metrics{
+// New returns all metrics.
+func New() *Memory {
+	log.Debug().Msg("memory.New started")
+	defer log.Debug().Msg("memory.New ended")
+
+	return &Memory{
+		data: map[string]metric.Metrics{
 			"Alloc":         metric.NewMetric("Alloc", "gauge"),
 			"BuckHashSys":   metric.NewMetric("BuckHashSys", "gauge"),
 			"Frees":         metric.NewMetric("Frees", "gauge"),
@@ -53,17 +58,48 @@ func NewData() *Data {
 	}
 }
 
-// Update updates all metrics.
-func (d *Data) Update() {
-	d.Lock()
-	defer d.Unlock()
-	d.updateGaugeMetrics()
-	d.updateCounterMetrics()
-	log.Println("All metrics updated.")
+// GetData return copy of data.
+func (d *Memory) GetData() map[string]metric.Metrics {
+	log.Debug().Msg("memory.GetData started")
+	defer log.Debug().Msg("memory.GetData ended")
+
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+
+	result := make(map[string]metric.Metrics, len(d.data))
+	
+	for _, currMetric := range d.data {
+		metricForResult := metric.NewMetric(currMetric.ID, currMetric.MType)
+		if currMetric.MType == "gauge" {
+			valueForResult := *currMetric.Value
+			metricForResult.Value = &valueForResult
+		} else if currMetric.MType == "counter" {
+			deltaForResult := *currMetric.Delta
+			metricForResult.Delta = &deltaForResult
+		}
+		result[metricForResult.ID] = metricForResult
+	}
+
+	return result
 }
 
-func (d *Data) updateGaugeMetrics() {
-	metricsToUpdate := d.Metrics
+// Update updates all metrics.
+func (d *Memory) Update(keyForUpdateHash string) {
+	log.Debug().Msg("memory.Update started")
+	defer log.Debug().Msg("memory.Update ended")
+
+	d.mu.Lock()
+	defer d.mu.Unlock()
+
+	d.updateGaugeMetrics(keyForUpdateHash)
+	d.updateCounterMetrics(keyForUpdateHash)
+}
+
+func (d *Memory) updateGaugeMetrics(keyForUpdateHash string) {
+	log.Debug().Msg("memory.updateGaugeMetrics started")
+	defer log.Debug().Msg("memory.updateGaugeMetrics ended")
+
+	metricsToUpdate := d.data
 
 	runtimeStats := runtime.MemStats{}
 	runtime.ReadMemStats(&runtimeStats)
@@ -93,21 +129,49 @@ func (d *Data) updateGaugeMetrics() {
 		case uint8:
 			valueForUpd = float64(statValue)
 		default:
-			log.Fatalln("unsupported metric type")
+			log.Error().
+				Err(errors.New("unsupported type of metric")).
+				Str("MID", currMetric.ID).
+				Str("MType", fmt.Sprint(statValue)).
+				Msg("unable to update metric")
 		}
 		currMetric.Value = &valueForUpd
 		metricsToUpdate[name] = currMetric
 	}
+
+	randomValue := metricsToUpdate["RandomValue"]
+	newRandomValue := rand.Float64()
+	*randomValue.Value = newRandomValue
+	metricsToUpdate["RandomValue"] = randomValue
+
+	for _, currMetric := range metricsToUpdate {
+		if keyForUpdateHash != "" {
+			if err := currMetric.UpdateHash(keyForUpdateHash); err != nil {
+				log.Error().
+					Err(err).
+					Str("MID", currMetric.ID).
+					Msg("unable to computing hash")
+			}
+		}
+	}
+
 }
 
-func (d *Data) updateCounterMetrics() {
-	metricsToUpdate := d.Metrics
+func (d *Memory) updateCounterMetrics(keyForUpdateHash string) {
+	log.Debug().Msg("memory.updateCounterMetrics started")
+	defer log.Debug().Msg("memory.updateCounterMetrics ended")
 
-	RandomValue := metricsToUpdate["RandomValue"]
-	rand.Seed(time.Now().UnixNano())
-	newRandomValue := rand.Float64()
-	*RandomValue.Value = newRandomValue
+	metricsToUpdate := d.data
 
 	PollCount := metricsToUpdate["PollCount"]
 	*PollCount.Delta++
+	if keyForUpdateHash != "" {
+		if err := PollCount.UpdateHash(keyForUpdateHash); err != nil {
+			log.Error().
+				Err(err).
+				Str("MID", PollCount.ID).
+				Msg("unable to computing hash")
+		}
+	}
+	metricsToUpdate["PollCount"] = PollCount
 }

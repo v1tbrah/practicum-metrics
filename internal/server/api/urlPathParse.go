@@ -1,6 +1,10 @@
 package api
 
-import "strings"
+import (
+	"strings"
+
+	"github.com/rs/zerolog/log"
+)
 
 type pathInfo struct {
 	typeM string
@@ -9,6 +13,9 @@ type pathInfo struct {
 }
 
 func newInfoUpdateURL(urlPath string) *pathInfo {
+	log.Debug().Str("urlPath", urlPath).Msg("api.newInfoUpdateURL started")
+	log.Debug().Msg("api.newInfoUpdateURL ended")
+
 	newInfoM := pathInfo{}
 	arrInfoM := strings.Split(strings.TrimPrefix(urlPath, "/update/"), "/")
 	lenArrInfoM := len(arrInfoM)
@@ -25,6 +32,9 @@ func newInfoUpdateURL(urlPath string) *pathInfo {
 }
 
 func newInfoGetValueURL(urlPath string) *pathInfo {
+	log.Debug().Str("urlPath", urlPath).Msg("api.newInfoGetValueURL started")
+	log.Debug().Msg("api.newInfoGetValueURL ended")
+
 	newInfoM := pathInfo{}
 	arrInfoM := strings.Split(strings.TrimPrefix(urlPath, "/value/"), "/")
 	lenArrInfoM := len(arrInfoM)

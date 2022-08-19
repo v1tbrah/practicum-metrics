@@ -15,10 +15,10 @@ import (
 
 type MockAPI struct {
 	Server *httptest.Server
-	Data   *memory.Data
+	Data   *memory.Memory
 }
 
-func NewAPI(addr string, data *memory.Data) *MockAPI {
+func NewAPI(addr string, data *memory.Memory) *MockAPI {
 	return &MockAPI{
 		Server: newServer(addr),
 		Data:   data,
@@ -41,12 +41,22 @@ func router() chi.Router {
 	r.Use(middleware.AllowContentType("application/json"))
 
 	r.Post("/update/", reportMetricHandler)
+	r.Post("/updates/", reportListMetricsHandler)
 	r.Post("/value/", getMetricHandler)
 
 	return r
 }
 
 func reportMetricHandler(w http.ResponseWriter, r *http.Request) {
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	w.Write(body)
+}
+
+func reportListMetricsHandler(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
