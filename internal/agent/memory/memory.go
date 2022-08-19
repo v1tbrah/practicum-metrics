@@ -13,18 +13,18 @@ import (
 	"github.com/v1tbrah/metricsAndAlerting/pkg/metric"
 )
 
-type Data struct {
-	Metrics map[string]metric.Metrics
-	mu      sync.Mutex
+type Memory struct {
+	data map[string]metric.Metrics
+	mu   sync.RWMutex
 }
 
-// NewData returns all metrics.
-func NewData() *Data {
-	log.Debug().Msg("memory.NewData started")
-	defer log.Debug().Msg("memory.NewData ended")
+// New returns all metrics.
+func New() *Memory {
+	log.Debug().Msg("memory.New started")
+	defer log.Debug().Msg("memory.New ended")
 
-	return &Data{
-		Metrics: map[string]metric.Metrics{
+	return &Memory{
+		data: map[string]metric.Metrics{
 			"Alloc":         metric.NewMetric("Alloc", "gauge"),
 			"BuckHashSys":   metric.NewMetric("BuckHashSys", "gauge"),
 			"Frees":         metric.NewMetric("Frees", "gauge"),
@@ -58,22 +58,48 @@ func NewData() *Data {
 	}
 }
 
+// GetData return copy of data.
+func (d *Memory) GetData() (map[string]metric.Metrics) {
+	log.Debug().Msg("memory.GetData started")
+	defer log.Debug().Msg("memory.GetData ended")
+
+	result := map[string]metric.Metrics{}
+
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+
+	for _, currMetric := range d.data {
+		metricForResult := metric.NewMetric(currMetric.ID, currMetric.MType)
+		if currMetric.MType == "gauge" {
+			valueForResult := *currMetric.Value
+			metricForResult.Value = &valueForResult
+		} else if currMetric.MType == "counter" {
+			deltaForResult := *currMetric.Delta
+			metricForResult.Delta = &deltaForResult
+		}
+		result[metricForResult.ID] = metricForResult
+	}
+
+	return result
+}
+
 // Update updates all metrics.
-func (d *Data) Update(keyForUpdateHash string) {
+func (d *Memory) Update(keyForUpdateHash string) {
 	log.Debug().Msg("memory.Update started")
 	defer log.Debug().Msg("memory.Update ended")
 
 	d.mu.Lock()
 	defer d.mu.Unlock()
+
 	d.updateGaugeMetrics(keyForUpdateHash)
 	d.updateCounterMetrics(keyForUpdateHash)
 }
 
-func (d *Data) updateGaugeMetrics(keyForUpdateHash string) {
+func (d *Memory) updateGaugeMetrics(keyForUpdateHash string) {
 	log.Debug().Msg("memory.updateGaugeMetrics started")
 	defer log.Debug().Msg("memory.updateGaugeMetrics ended")
 
-	metricsToUpdate := d.Metrics
+	metricsToUpdate := d.data
 
 	runtimeStats := runtime.MemStats{}
 	runtime.ReadMemStats(&runtimeStats)
@@ -131,11 +157,11 @@ func (d *Data) updateGaugeMetrics(keyForUpdateHash string) {
 
 }
 
-func (d *Data) updateCounterMetrics(keyForUpdateHash string) {
+func (d *Memory) updateCounterMetrics(keyForUpdateHash string) {
 	log.Debug().Msg("memory.updateCounterMetrics started")
 	defer log.Debug().Msg("memory.updateCounterMetrics ended")
 
-	metricsToUpdate := d.Metrics
+	metricsToUpdate := d.data
 
 	PollCount := metricsToUpdate["PollCount"]
 	*PollCount.Delta++

@@ -29,7 +29,7 @@ func New(storage repo.Storage, cfg *config.Config) (*Service, error) {
 	service := &Service{Storage: storage, Cfg: cfg}
 
 	if cfg.StorageType == config.StorageTypeMemory {
-		inMemStorage, ok := service.Storage.(*memory.MemStorage)
+		inMemStorage, ok := service.Storage.(*memory.Memory)
 		if !ok {
 			return nil, errors.New("type of storage is not *memory.MemStorage with StorageType == StorageTypeMemory")
 		}
@@ -62,7 +62,7 @@ func (s *Service) writeMetricsToFileWithInterval(ctx context.Context) {
 		return
 	}
 	ticker := time.NewTicker(s.Cfg.StoreInterval)
-	inMemStorage, _ := s.Storage.(*memory.MemStorage)
+	inMemStorage, _ := s.Storage.(*memory.Memory)
 	for {
 		<-ticker.C
 		if err := inMemStorage.StoreData(ctx); err != nil {

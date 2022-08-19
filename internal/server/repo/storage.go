@@ -17,7 +17,7 @@ import (
 var ErrEmptyConfig = errors.New("empty config")
 
 type Storage interface {
-	GetData(ctx context.Context) (*model.Data, error)
+	GetData(ctx context.Context) (model.Data, error)
 	GetMetric(ctx context.Context, ID string) (metric.Metrics, bool, error)
 	SetMetric(ctx context.Context, thisMetric metric.Metrics) error
 	SetListMetrics(ctx context.Context, listMetrics []metric.Metrics) error

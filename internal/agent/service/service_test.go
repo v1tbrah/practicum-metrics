@@ -1,7 +1,6 @@
 package service
 
 import (
-	"github.com/v1tbrah/metricsAndAlerting/pkg/metric"
 	"net/http"
 	"testing"
 
@@ -10,6 +9,7 @@ import (
 
 	"github.com/v1tbrah/metricsAndAlerting/internal/agent/config"
 	"github.com/v1tbrah/metricsAndAlerting/internal/agent/service/mockapi"
+	"github.com/v1tbrah/metricsAndAlerting/pkg/metric"
 )
 
 func Test_service_reportMetric(t *testing.T) {
@@ -47,7 +47,7 @@ func Test_service_reportMetric(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			serviceData := myService.data.Metrics
+			serviceData := myService.data.GetData()
 			resp, err := myService.reportMetric(serviceData[tt.MID])
 			if tt.wantErr {
 				require.NotNil(t, err)

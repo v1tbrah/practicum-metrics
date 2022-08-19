@@ -27,7 +27,7 @@ var (
 type service struct {
 	client *resty.Client
 	cfg    *config.Config
-	data   *memory.Data
+	data   *memory.Memory
 }
 
 // New returns service.
@@ -42,7 +42,7 @@ func New(cfg *config.Config) (*service, error) {
 	newService := service{
 		client: resty.New(),
 		cfg:    cfg,
-		data:   memory.NewData()}
+		data:   memory.New()}
 
 	return &newService, nil
 }
@@ -80,13 +80,12 @@ func (s *service) updateDataWithInterval(interval time.Duration) {
 
 func (s *service) reportDataWithInterval(interval time.Duration) {
 	log.Debug().Dur("interval", interval).Msg("service.reportDataWithInterval started")
-	defer log.Printf("service.reportDataWithInterval ended")
+	defer log.Debug().Msg("service.reportDataWithInterval ended")
 
 	ticker := time.NewTicker(interval)
 	for {
 		<-ticker.C
-		// TODO должна ли перед этим range быть блокировка на чтение?
-		for _, currMetric := range s.data.Metrics {
+		for _, currMetric := range s.data.GetData() {
 			if _, err := s.reportMetric(currMetric); err != nil {
 				log.Error().
 					Err(err).
@@ -99,7 +98,6 @@ func (s *service) reportDataWithInterval(interval time.Duration) {
 				log.Info().Str("MID", currMetric.ID).Msg("metric reported")
 			}
 		}
-
 	}
 }
 
@@ -111,6 +109,27 @@ func (s *service) reportMetric(metricForReport metric.Metrics) (*resty.Response,
 		Str("valuePtr", fmt.Sprint(metricForReport.Value)).
 		Msg("service.reportMetric started")
 	defer log.Printf("service.reportMetric ended")
+
+	//***
+	//defer func() {
+	//	if err == nil {
+	//		log.Debug().
+	//			Str("r", r.String()).
+	//			Str("MID", metricForReport.ID).
+	//			Str("MType", metricForReport.MType).
+	//			Str("deltaPtr", fmt.Sprint(metricForReport.Delta)).
+	//			Str("valuePtr", fmt.Sprint(metricForReport.Value)).
+	//			Msg("service.reportMetric started")
+	//	} else {
+	//		log.Error().
+	//			Err(err).
+	//			Str("MID", metricForReport.ID).
+	//			Str("MType", metricForReport.MType).
+	//			Str("deltaPtr", fmt.Sprint(metricForReport.Delta)).
+	//			Str("valuePtr", fmt.Sprint(metricForReport.Value)).
+	//			Msg("service.reportMetric started")
+	//	}
+	//} ()
 
 	if metricForReport.ID == "" {
 		return nil, ErrMetricIDIsEmpty

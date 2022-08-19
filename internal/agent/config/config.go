@@ -5,12 +5,12 @@ import (
 	"time"
 
 	"github.com/caarlos0/env/v6"
+	"github.com/rs/zerolog/log"
 )
 
 const (
-	WithDebug = "withDebug"
-	WithFlag  = "withFlag"
-	WithEnv   = "withEnv"
+	WithFlag = "withFlag"
+	WithEnv  = "withEnv"
 )
 
 type Config struct {
@@ -24,11 +24,11 @@ type Config struct {
 	ReportMetricURL      string
 	ReportListMetricsURL string
 	GetMetricURL         string
-
-	Debug bool
 }
 
 func New(args ...string) (*Config, error) {
+	log.Debug().Msg("config.New started")
+	defer log.Debug().Msg("config.New ended")
 
 	cfg := &Config{
 		ServerAddr:     "127.0.0.1:8080",
@@ -38,8 +38,6 @@ func New(args ...string) (*Config, error) {
 
 	for _, arg := range args {
 		switch arg {
-		case WithDebug:
-			cfg.Debug = true
 		case WithFlag:
 			cfg.parseFromOsArgs()
 		case WithEnv:
@@ -57,6 +55,8 @@ func New(args ...string) (*Config, error) {
 }
 
 func (c *Config) parseFromOsArgs() {
+	log.Debug().Msg("config.parseFromOsArgs started")
+	defer log.Debug().Msg("config.parseFromOsArgs ended")
 
 	flag.StringVar(&c.ServerAddr, "a", c.ServerAddr, "server address")
 	flag.DurationVar(&c.PollInterval, "p", c.PollInterval, "interval for updating metrics")
@@ -69,5 +69,8 @@ func (c *Config) parseFromOsArgs() {
 }
 
 func (c *Config) parseFromEnv() error {
+	log.Debug().Msg("config.parseFromEnv started")
+	defer log.Debug().Msg("config.parseFromEnv ended")
+
 	return env.Parse(c)
 }

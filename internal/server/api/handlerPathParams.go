@@ -2,9 +2,10 @@ package api
 
 import (
 	"fmt"
-	"github.com/rs/zerolog/log"
 	"net/http"
 	"strconv"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/v1tbrah/metricsAndAlerting/pkg/metric"
 )

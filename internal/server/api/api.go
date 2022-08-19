@@ -50,7 +50,7 @@ func (a *api) Run() {
 
 	<-exit
 	if a.service.Cfg.StorageType == config.StorageTypeMemory {
-		memStorage, _ := a.service.Storage.(*memory.MemStorage)
+		memStorage, _ := a.service.Storage.(*memory.Memory)
 		if err := memStorage.StoreData(context.Background()); err != nil {
 			log.Error().
 				Err(err).
@@ -60,7 +60,7 @@ func (a *api) Run() {
 			log.Info().Msg(fmt.Sprintf("data saved to file: %s", a.service.Cfg.StoreFile))
 		}
 	} else if a.service.Cfg.StorageType == config.StorageTypeDB {
-		DBStorage, _ := a.service.Storage.(*pg.PgStorage)
+		DBStorage, _ := a.service.Storage.(*pg.Pg)
 		DBStorage.ClosePoolConn()
 	}
 	log.Info().Msg("api ended")

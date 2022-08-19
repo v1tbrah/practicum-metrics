@@ -36,7 +36,7 @@ func (a *api) getPageHandler() http.HandlerFunc {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		fillMetricsForPage(&dataForPage.Metrics, dataMetrics)
+		fillMetricsForPage(&dataForPage.Data, dataMetrics)
 		page, err := dataForPage.Page()
 		if err != nil {
 			log.Error().
@@ -56,7 +56,7 @@ func (a *api) checkDBConnHandler() http.HandlerFunc {
 		log.Debug().Msg("api.checkDBConnHandler started")
 		log.Debug().Msg("api.checkDBConnHandler ended")
 
-		dbStorage, ok := a.service.Storage.(*pg.PgStorage)
+		dbStorage, ok := a.service.Storage.(*pg.Pg)
 		if !ok {
 			http.Error(w, "type of storage is not DB storage", http.StatusBadRequest)
 			return

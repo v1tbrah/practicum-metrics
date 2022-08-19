@@ -16,14 +16,14 @@ const pageTpl = `
 	<body>
 		<h1> Metrics </h1>
 		<ul>
-		{{range .Metrics}}<li>{{ . }}</li>{{else}}<div><strong>Have no information</strong></div>{{end}}
+		{{range .Data}}<li>{{ . }}</li>{{else}}<div><strong>Have no information</strong></div>{{end}}
 		</ul>
 	</body>
 </page>`
 
 type dataForPage struct {
-	Title   string
-	Metrics []string
+	Title string
+	Data  []string
 }
 
 // NewDataForPage returns new dataForPage.
@@ -31,7 +31,7 @@ func NewDataForPage() *dataForPage {
 	log.Debug().Msg("service.NewDataForPage started")
 	defer log.Debug().Msg("service.NewDataForPage ended")
 
-	return &dataForPage{Title: "Data"}
+	return &dataForPage{Title: "Metrics"}
 }
 
 // Page returns the completed start page template.
