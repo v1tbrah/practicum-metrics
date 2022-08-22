@@ -35,7 +35,7 @@ type service struct {
 
 // New returns service.
 func New(cfg *config.Config) (*service, error) {
-	log.Debug().Str("cfg", fmt.Sprint(cfg)).Msg("service.New started")
+	log.Debug().Str("cfg", cfg.String()).Msg("service.New started")
 	defer log.Debug().Msg("service.New ended")
 
 	if cfg == nil {

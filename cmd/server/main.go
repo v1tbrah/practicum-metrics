@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
@@ -39,8 +40,8 @@ func main() {
 	if err != nil {
 		log.Fatal().
 			Err(err).
-			Str("storage", fmt.Sprint(newCfg)).
-			Str("config", fmt.Sprint(newCfg)).
+			Str("storage", fmt.Sprint(newStorage)).
+			Str("config", newCfg.String()).
 			Msg("unable to create new service")
 	}
 

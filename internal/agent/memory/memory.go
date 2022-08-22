@@ -2,7 +2,6 @@ package memory
 
 import (
 	"errors"
-	"github.com/shirou/gopsutil/v3/cpu"
 	"math/rand"
 	"reflect"
 	"runtime"
@@ -10,6 +9,7 @@ import (
 	"time"
 
 	"github.com/rs/zerolog/log"
+  "github.com/shirou/gopsutil/v3/cpu"
 	"github.com/shirou/gopsutil/v3/mem"
 
 	"github.com/v1tbrah/metricsAndAlerting/pkg/metric"

@@ -2,16 +2,22 @@ package config
 
 import (
 	"flag"
-	"github.com/rs/zerolog/log"
 	"strconv"
 	"time"
 
 	"github.com/caarlos0/env/v6"
+  "github.com/rs/zerolog/log"
 )
 
 const (
-	WithFlag = "withFlag"
-	WithEnv  = "withEnv"
+	WithDebug = "withDebug"
+	WithFlag  = "withFlag"
+	WithEnv   = "withEnv"
+)
+
+const (
+	StorageTypeMemory = iota
+	StorageTypeDB
 )
 
 const (
