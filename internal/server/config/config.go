@@ -6,18 +6,13 @@ import (
 	"time"
 
 	"github.com/caarlos0/env/v6"
-  "github.com/rs/zerolog/log"
+	"github.com/rs/zerolog/log"
 )
 
 const (
 	WithDebug = "withDebug"
 	WithFlag  = "withFlag"
 	WithEnv   = "withEnv"
-)
-
-const (
-	StorageTypeMemory = iota
-	StorageTypeDB
 )
 
 const (
