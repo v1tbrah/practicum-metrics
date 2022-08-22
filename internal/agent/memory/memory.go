@@ -3,6 +3,7 @@ package memory
 import (
 	"errors"
 	"fmt"
+	"github.com/shirou/gopsutil/v3/cpu"
 	"math/rand"
 	"reflect"
 	"runtime"
@@ -122,10 +123,14 @@ func (d *Memory) UpdateAdditional(keyForUpdateHash string) error {
 	freeMemoryForUpd.Value = &currFreeMemory
 	d.data["FreeMemory"] = freeMemoryForUpd
 
-	cpuUtilForUpd := d.data["CPUutilization1"]
-	currCpuUtil := float64(runtime.NumCPU())
-	cpuUtilForUpd.Value = &currCpuUtil
-	d.data["CPUutilization1"] = cpuUtilForUpd
+	CPUUtilForUpd := d.data["CPUutilization1"]
+	currCPUUtil, err := cpu.Counts(true)
+	if err != nil {
+		return err
+	}
+	currCPUUtilValue := float64(currCPUUtil)
+	CPUUtilForUpd.Value = &currCPUUtilValue
+	d.data["CPUutilization1"] = CPUUtilForUpd
 
 	if keyForUpdateHash != "" {
 		if err := totalMemoryForUpd.UpdateHash(keyForUpdateHash); err != nil {
@@ -134,8 +139,8 @@ func (d *Memory) UpdateAdditional(keyForUpdateHash string) error {
 		if err := freeMemoryForUpd.UpdateHash(keyForUpdateHash); err != nil {
 			log.Error().Err(err).Str("MID", freeMemoryForUpd.ID).Msg("unable to computing hash")
 		}
-		if err := cpuUtilForUpd.UpdateHash(keyForUpdateHash); err != nil {
-			log.Error().Err(err).Str("MID", cpuUtilForUpd.ID).Msg("unable to computing hash")
+		if err := CPUUtilForUpd.UpdateHash(keyForUpdateHash); err != nil {
+			log.Error().Err(err).Str("MID", CPUUtilForUpd.ID).Msg("unable to computing hash")
 		}
 	}
 
