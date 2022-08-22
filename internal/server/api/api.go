@@ -43,6 +43,8 @@ func (a *api) Run() {
 	log.Debug().Msg("api.Run started")
 	log.Debug().Msg("api.Run ended")
 
+	log.Info().Msg("api started")
+
 	exit := make(chan os.Signal, 1)
 	signal.Notify(exit, os.Interrupt, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
 
