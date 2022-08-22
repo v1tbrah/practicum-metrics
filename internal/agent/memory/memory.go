@@ -2,7 +2,6 @@ package memory
 
 import (
 	"errors"
-	"fmt"
 	"github.com/shirou/gopsutil/v3/cpu"
 	"math/rand"
 	"reflect"
@@ -134,13 +133,13 @@ func (d *Memory) UpdateAdditional(keyForUpdateHash string) error {
 
 	if keyForUpdateHash != "" {
 		if err := totalMemoryForUpd.UpdateHash(keyForUpdateHash); err != nil {
-			log.Error().Err(err).Str("MID", totalMemoryForUpd.ID).Msg("unable to computing hash")
+			log.Error().Err(err).Str("metric", totalMemoryForUpd.String()).Msg("unable to computing hash")
 		}
 		if err := freeMemoryForUpd.UpdateHash(keyForUpdateHash); err != nil {
-			log.Error().Err(err).Str("MID", freeMemoryForUpd.ID).Msg("unable to computing hash")
+			log.Error().Err(err).Str("metric", freeMemoryForUpd.String()).Msg("unable to computing hash")
 		}
 		if err := CPUUtilForUpd.UpdateHash(keyForUpdateHash); err != nil {
-			log.Error().Err(err).Str("MID", CPUUtilForUpd.ID).Msg("unable to computing hash")
+			log.Error().Err(err).Str("metric", CPUUtilForUpd.String()).Msg("unable to computing hash")
 		}
 	}
 
@@ -181,11 +180,7 @@ func (d *Memory) updateBasicGaugeMetrics(keyForUpdateHash string) {
 		case uint8:
 			valueForUpd = float64(statValue)
 		default:
-			log.Error().
-				Err(errors.New("unsupported type of metric")).
-				Str("MID", currMetric.ID).
-				Str("MType", fmt.Sprint(statValue)).
-				Msg("unable to update metric")
+			log.Error().Err(errors.New("unsupported type of metric")).Msg("unable to update metric")
 		}
 		currMetric.Value = &valueForUpd
 		metricsToUpdate[name] = currMetric
@@ -199,10 +194,7 @@ func (d *Memory) updateBasicGaugeMetrics(keyForUpdateHash string) {
 	for _, currMetric := range metricsToUpdate {
 		if keyForUpdateHash != "" {
 			if err := currMetric.UpdateHash(keyForUpdateHash); err != nil {
-				log.Error().
-					Err(err).
-					Str("MID", currMetric.ID).
-					Msg("unable to computing hash")
+				log.Error().Err(err).Str("metric", currMetric.String()).Msg("unable to computing hash")
 			}
 		}
 	}
@@ -219,10 +211,7 @@ func (d *Memory) updateBasicCounterMetrics(keyForUpdateHash string) {
 	*PollCount.Delta++
 	if keyForUpdateHash != "" {
 		if err := PollCount.UpdateHash(keyForUpdateHash); err != nil {
-			log.Error().
-				Err(err).
-				Str("MID", PollCount.ID).
-				Msg("unable to computing hash")
+			log.Error().Err(err).Str("metric", PollCount.String()).Msg("unable to computing hash")
 		}
 	}
 	metricsToUpdate["PollCount"] = PollCount

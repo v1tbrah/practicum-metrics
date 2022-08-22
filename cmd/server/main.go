@@ -31,7 +31,7 @@ func main() {
 	if err != nil {
 		log.Fatal().
 			Err(err).
-			Str("config", fmt.Sprint(newCfg)).
+			Str("config", newCfg.String()).
 			Msg("unable to create new storage")
 	}
 

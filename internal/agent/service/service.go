@@ -145,14 +145,9 @@ loop:
 						}
 						continue loop
 					}
-					log.Error().Err(err).
-						Str("MID", currMetric.ID).
-						Str("MType", currMetric.MType).
-						Str("deltaPtr", fmt.Sprint(currMetric.Delta)).
-						Str("valuePtr", fmt.Sprint(currMetric.Value)).
-						Msg("unable reporting metric")
+					log.Error().Err(err).Str("metric", currMetric.String()).Msg("unable reporting metric")
 				} else {
-					log.Info().Str("MID", currMetric.ID).Msg("metric reported")
+					log.Info().Str("metric", currMetric.String()).Msg("metric reported")
 				}
 			}
 		case _, ok := <-shutdown:
@@ -165,34 +160,8 @@ loop:
 }
 
 func (s *service) reportMetric(metricForReport metric.Metrics) (*resty.Response, error) {
-	log.Debug().
-		Str("MID", metricForReport.ID).
-		Str("MType", metricForReport.MType).
-		Str("deltaPtr", fmt.Sprint(metricForReport.Delta)).
-		Str("valuePtr", fmt.Sprint(metricForReport.Value)).
-		Msg("service.reportMetric started")
+	log.Debug().Str("metric", metricForReport.String()).Msg("service.reportMetric started")
 	defer log.Printf("service.reportMetric ended")
-
-	//***
-	//defer func() {
-	//	if err == nil {
-	//		log.Debug().
-	//			Str("r", r.String()).
-	//			Str("MID", metricForReport.ID).
-	//			Str("MType", metricForReport.MType).
-	//			Str("deltaPtr", fmt.Sprint(metricForReport.Delta)).
-	//			Str("valuePtr", fmt.Sprint(metricForReport.Value)).
-	//			Msg("service.reportMetric started")
-	//	} else {
-	//		log.Error().
-	//			Err(err).
-	//			Str("MID", metricForReport.ID).
-	//			Str("MType", metricForReport.MType).
-	//			Str("deltaPtr", fmt.Sprint(metricForReport.Delta)).
-	//			Str("valuePtr", fmt.Sprint(metricForReport.Value)).
-	//			Msg("service.reportMetric started")
-	//	}
-	//} ()
 
 	if metricForReport.ID == "" {
 		return nil, ErrMetricIDIsEmpty
