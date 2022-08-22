@@ -8,9 +8,8 @@ import (
 )
 
 const (
-	WithDebug = "withDebug"
-	WithFlag  = "withFlag"
-	WithEnv   = "withEnv"
+	WithFlag = "withFlag"
+	WithEnv  = "withEnv"
 )
 
 const (
@@ -30,8 +29,6 @@ type Config struct {
 	Restore       bool          `env:"RESTORE"`
 
 	HashKey string `env:"KEY"`
-
-	Debug bool
 }
 
 func New(args ...string) (*Config, error) {
@@ -42,8 +39,6 @@ func New(args ...string) (*Config, error) {
 
 	for _, arg := range args {
 		switch arg {
-		case WithDebug:
-			cfg.Debug = true
 		case WithFlag:
 			cfg.parseFromOsArgs()
 		case WithEnv:

@@ -2,8 +2,6 @@ package main
 
 import (
 	"fmt"
-	"time"
-
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
@@ -13,13 +11,10 @@ import (
 	"github.com/v1tbrah/metricsAndAlerting/internal/server/service"
 )
 
-func setupLog() {
-	zerolog.TimeFieldFormat = time.RFC822
-	zerolog.SetGlobalLevel(zerolog.InfoLevel)
-}
-
 func main() {
-	setupLog()
+	logLevel := zerolog.DebugLevel
+	zerolog.SetGlobalLevel(logLevel)
+
 	log.Debug().Str("application", "server").Msg("main started")
 	defer log.Debug().Str("application", "server").Msg("main ended")
 
@@ -30,9 +25,6 @@ func main() {
 			Err(err).
 			Strs("config options", cfgOptions).
 			Msg("unable to create new config")
-	}
-	if newCfg.Debug {
-		zerolog.SetGlobalLevel(zerolog.DebugLevel)
 	}
 
 	newStorage, err := repo.New(newCfg)

@@ -11,7 +11,7 @@ import (
 )
 
 func main() {
-	logLevel := zerolog.InfoLevel
+	logLevel := zerolog.DebugLevel
 	zerolog.SetGlobalLevel(logLevel)
 
 	log.Debug().Str("application", "agent").Msg("main started")

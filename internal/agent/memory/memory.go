@@ -8,6 +8,7 @@ import (
 	"reflect"
 	"runtime"
 	"sync"
+	"time"
 
 	"github.com/rs/zerolog/log"
 	"github.com/shirou/gopsutil/v3/mem"
@@ -124,12 +125,11 @@ func (d *Memory) UpdateAdditional(keyForUpdateHash string) error {
 	d.data["FreeMemory"] = freeMemoryForUpd
 
 	CPUUtilForUpd := d.data["CPUutilization1"]
-	currCPUUtil, err := cpu.Counts(true)
+	currCPUUtil, err := cpu.Percent(time.Second*0, false)
 	if err != nil {
 		return err
 	}
-	currCPUUtilValue := float64(currCPUUtil)
-	CPUUtilForUpd.Value = &currCPUUtilValue
+	CPUUtilForUpd.Value = &currCPUUtil[0]
 	d.data["CPUutilization1"] = CPUUtilForUpd
 
 	if keyForUpdateHash != "" {
