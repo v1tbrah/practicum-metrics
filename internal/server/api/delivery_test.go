@@ -44,7 +44,7 @@ func TestUpdateHandler(t *testing.T) {
 		want want
 	}{
 		{
-			name: "Test Update Gauge OK",
+			name: "Test UpdateBasic Gauge OK",
 			args: args{
 				request: httptest.NewRequest(http.MethodPost, localHost+"/update/", updateBody("Alloc", "gauge", 1.22, 0)),
 			},
@@ -53,7 +53,7 @@ func TestUpdateHandler(t *testing.T) {
 			},
 		},
 		{
-			name: "Test Update Counter OK",
+			name: "Test UpdateBasic Counter OK",
 			args: args{
 				request: httptest.NewRequest(http.MethodPost, localHost+"/update/", updateBody("PollCount", "counter", 0.0, 1)),
 			},
@@ -62,7 +62,7 @@ func TestUpdateHandler(t *testing.T) {
 			},
 		},
 		{
-			name: "Test Update /update/ Not Found",
+			name: "Test UpdateBasic /update/ Not Found",
 			args: args{
 				request: httptest.NewRequest(http.MethodPost, localHost+"/update/", updateBody("", "", 0.0, 0)),
 			},
@@ -71,7 +71,7 @@ func TestUpdateHandler(t *testing.T) {
 			},
 		},
 		{
-			name: "Test Update /update/unknown/ Not Implemented",
+			name: "Test UpdateBasic /update/unknown/ Not Implemented",
 			args: args{
 				request: httptest.NewRequest(http.MethodPost, localHost+"/update/", updateBody("", "unknown", 0.0, 0)),
 			},
@@ -80,7 +80,7 @@ func TestUpdateHandler(t *testing.T) {
 			},
 		},
 		{
-			name: "Test Update /update/gauge/ Not Found",
+			name: "Test UpdateBasic /update/gauge/ Not Found",
 			args: args{
 				request: httptest.NewRequest(http.MethodPost, localHost+"/update/", updateBody("", "gauge", 0.0, 0)),
 			},
@@ -89,7 +89,7 @@ func TestUpdateHandler(t *testing.T) {
 			},
 		},
 		{
-			name: "Test Update /update/counter/ Not Found",
+			name: "Test UpdateBasic /update/counter/ Not Found",
 			args: args{
 				request: httptest.NewRequest(http.MethodPost, localHost+"/update/", updateBody("", "counter", 0.0, 0)),
 			},
@@ -98,7 +98,7 @@ func TestUpdateHandler(t *testing.T) {
 			},
 		},
 		{
-			name: "Test Update /update/gauge/testNameGauge/",
+			name: "Test UpdateBasic /update/gauge/testNameGauge/",
 			args: args{
 				request: httptest.NewRequest(http.MethodPost, localHost+"/update/", updateBody("testNameGauge", "gauge", 0.0, 0)),
 			},
@@ -107,7 +107,7 @@ func TestUpdateHandler(t *testing.T) {
 			},
 		},
 		{
-			name: "Test Update /update/counter/testNameCounter/",
+			name: "Test UpdateBasic /update/counter/testNameCounter/",
 			args: args{
 				request: httptest.NewRequest(http.MethodPost, localHost+"/update/", updateBody("testNameCounter", "counter", 0.0, 0)),
 			},
