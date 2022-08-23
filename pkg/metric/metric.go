@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
+	"strconv"
 )
 
 var (
@@ -18,6 +19,22 @@ type Metrics struct {
 	Delta *int64   `json:"delta,omitempty"`
 	Value *float64 `json:"value,omitempty"`
 	Hash  string   `json:"hash,omitempty"`
+}
+
+// TypeIsValid checks the validity of metrics.
+func (m *Metrics) String() string {
+	deltaStr := "nil"
+	if m.Delta != nil {
+		deltaStr = strconv.FormatInt(*m.Delta, 10)
+	}
+	valueStr := "nil"
+	if m.Value != nil {
+		valueStr = strconv.FormatFloat(*m.Value, 'f', -1, 64)
+	}
+	return "ID: " + m.ID +
+		", MType: " + m.MType +
+		", Delta: " + deltaStr +
+		", Value: " + valueStr
 }
 
 // NewMetric returns new Metrics.

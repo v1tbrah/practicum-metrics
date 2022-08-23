@@ -26,15 +26,25 @@ type Config struct {
 	GetMetricURL         string
 }
 
-func New(args ...string) (*Config, error) {
-	log.Debug().Msg("config.New started")
-	defer log.Debug().Msg("config.New ended")
+func (c *Config) String() string {
+	return "ServerAddr: " + c.ServerAddr +
+		", PollInterval: " + c.PollInterval.String() +
+		", ReportInterval: " + c.ReportInterval.String() +
+		", ReportMetricURL: " + c.ReportMetricURL +
+		", ReportListMetricsURL: " + c.ReportListMetricsURL +
+		", GetMetricURL: " + c.GetMetricURL
+}
 
-	cfg := &Config{
-		ServerAddr:     "127.0.0.1:8080",
-		PollInterval:   2 * time.Second,
-		ReportInterval: 10 * time.Second,
-	}
+func New(args ...string) (*Config, error) {
+	log.Debug().Strs("args", args).Msg("config.New started")
+	cfg := &Config{}
+	defer func() {
+		log.Debug().Str("config", cfg.String()).Msg("config.New ended")
+	}()
+
+	cfg.ServerAddr = "127.0.0.1:8080"
+	cfg.PollInterval = 2 * time.Second
+	cfg.ReportInterval = 10 * time.Second
 
 	for _, arg := range args {
 		switch arg {

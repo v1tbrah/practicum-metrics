@@ -12,7 +12,7 @@ import (
 
 func fillMetricFromPathParams(metric *metric.Metrics, handlerType, path string) (int, error) {
 	log.Debug().
-		Str("metric", fmt.Sprint(metric)).
+		Str("metric", metric.String()).
 		Str("handlerType", handlerType).
 		Str("path", path).
 		Msg("api.fillMetricFromPathParams started")
@@ -48,7 +48,7 @@ func fillMetricFromPathParams(metric *metric.Metrics, handlerType, path string) 
 
 func fillMetricValueFromPathInfo(metric *metric.Metrics, pathInfo *pathInfo) (int, error) {
 	log.Debug().
-		Str("metric", fmt.Sprint(metric)).
+		Str("metric", metric.String()).
 		Str("pathInfo", fmt.Sprint(pathInfo)).
 		Msg("api.fillMetricValueFromPathInfo started")
 	log.Debug().Msg("api.fillMetricValueFromPathInfo ended")

@@ -1,8 +1,6 @@
 package main
 
 import (
-	"fmt"
-
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
@@ -11,7 +9,7 @@ import (
 )
 
 func main() {
-	logLevel := zerolog.InfoLevel
+	logLevel := zerolog.DebugLevel
 	zerolog.SetGlobalLevel(logLevel)
 
 	log.Debug().Str("application", "agent").Msg("main started")
@@ -30,7 +28,7 @@ func main() {
 	if err != nil {
 		log.Fatal().
 			Err(err).
-			Str("config", fmt.Sprint(newCfg)).
+			Str("config", newCfg.String()).
 			Strs("config options", cfgOptions).
 			Msg("unable to create new service")
 	}

@@ -2,9 +2,11 @@ package config
 
 import (
 	"flag"
+	"strconv"
 	"time"
 
 	"github.com/caarlos0/env/v6"
+	"github.com/rs/zerolog/log"
 )
 
 const (
@@ -30,20 +32,34 @@ type Config struct {
 	Restore       bool          `env:"RESTORE"`
 
 	HashKey string `env:"KEY"`
+}
 
-	Debug bool
+func (c *Config) String() string {
+	restoreStr := "false"
+	if c.Restore {
+		restoreStr = "true"
+	}
+	return "Addr: " + c.Addr +
+		", StorageType: " + strconv.Itoa(c.StorageType) +
+		", PgConnString: " + c.PgConnString +
+		", StoreInterval: " + c.StoreInterval.String() +
+		", StoreFile: " + c.StoreFile +
+		", Restore: " + restoreStr
 }
 
 func New(args ...string) (*Config, error) {
-	cfg := &Config{
-		Addr:          "127.0.0.1:8080",
-		StoreInterval: time.Second * 300,
-		Restore:       true}
+	log.Debug().Strs("args", args).Msg("config.New started")
+	cfg := &Config{}
+	defer func() {
+		log.Debug().Str("config", cfg.String()).Msg("config.New ended")
+	}()
+
+	cfg.Addr = "127.0.0.1:8080"
+	cfg.StoreInterval = time.Second * 300
+	cfg.Restore = true
 
 	for _, arg := range args {
 		switch arg {
-		case WithDebug:
-			cfg.Debug = true
 		case WithFlag:
 			cfg.parseFromOsArgs()
 		case WithEnv:
