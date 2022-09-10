@@ -42,7 +42,7 @@ func (c *config) parseFromEnv() error {
 		LogLevel       string        `env:"LOGLEVEL"`
 	}{}
 
-	if err = env.Parse(c); err != nil {
+	if err = env.Parse(&configEnv); err != nil {
 		return err
 	}
 

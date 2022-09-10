@@ -12,18 +12,18 @@ const (
 )
 
 type config struct {
-	serverAddr string `env:"ADDRESS"`
+	serverAddr string
 
-	pollInterval   time.Duration `env:"POLL_INTERVAL"`
-	reportInterval time.Duration `env:"REPORT_INTERVAL"`
+	pollInterval   time.Duration
+	reportInterval time.Duration
 
-	hashKey string `env:"KEY"`
+	hashKey string
 
 	reportMetricURL      string
 	reportListMetricsURL string
 	getMetricURL         string
 
-	logLevel string `env:"LOGLEVEL"`
+	logLevel string
 }
 
 func New(args ...string) (*config, error) {
@@ -41,7 +41,7 @@ func New(args ...string) (*config, error) {
 	cfg.serverAddr = "127.0.0.1:8080"
 	cfg.pollInterval = 2 * time.Second
 	cfg.reportInterval = 10 * time.Second
-	cfg.logLevel = "info"
+	cfg.logLevel = "debug"
 
 	for _, arg := range args {
 		switch arg {
