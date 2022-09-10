@@ -67,16 +67,6 @@ func (p *Pg) GetMetric(ctx context.Context, ID string) (metric.Metrics, bool, er
 	resultMetric := metric.Metrics{}
 
 	row := p.getMetricStmt.QueryRowContext(ctx, ID)
-	//row := p.dbPoll.QueryRow(ctx,
-	//	`SELECT
-	//			id,
-	//			type,
-	//			delta,
-	//			value
-	//		FROM
-	//			metrics
-	//		WHERE id=$1`,
-	//	ID)
 
 	var delta sql.NullInt64
 	var value sql.NullFloat64
@@ -110,11 +100,6 @@ func (p *Pg) SetMetric(ctx context.Context, thisMetric metric.Metrics) error {
 
 	txStmt := tx.StmtContext(ctx, p.setMetricStmt)
 	if _, err = txStmt.ExecContext(ctx,
-		//`INSERT INTO metrics
-		//		(id, type, delta, value)
-		//	VALUES ($1, $2, $3, $4)
-		//	ON CONFLICT (id) DO UPDATE SET
-		//		id=$1, type=$2, delta=$3, value=$4`,
 		thisMetric.ID, thisMetric.MType, thisMetric.Delta, thisMetric.Value); err != nil {
 		return err
 	}
@@ -136,11 +121,6 @@ func (p *Pg) SetListMetrics(ctx context.Context, listMetrics []metric.Metrics) e
 
 	for _, currMetric := range listMetrics {
 		if _, err = txStmt.ExecContext(ctx,
-			//`INSERT INTO metrics
-			//		(id, type, delta, value)
-			//	VALUES ($1, $2, $3, $4)
-			//	ON CONFLICT (id) DO UPDATE SET
-			//		id=$1, type=$2, delta=$3, value=$4`,
 			currMetric.ID, currMetric.MType, currMetric.Delta, currMetric.Value); err != nil {
 			return err
 		}
@@ -154,13 +134,6 @@ func (p *Pg) GetData(ctx context.Context) (model.Data, error) {
 	defer log.Debug().Msg("pg.GetData ended")
 
 	rows, err := p.getDataStmt.QueryContext(ctx)
-	//`SELECT
-	//		id,
-	//		type,
-	//		delta,
-	//		value
-	//	FROM
-	//		metrics`)
 	if err != nil {
 		return nil, err
 	}

@@ -10,9 +10,8 @@ import (
 )
 
 const (
-	WithDebug = "withDebug"
-	WithFlag  = "withFlag"
-	WithEnv   = "withEnv"
+	WithFlag = "withFlag"
+	WithEnv  = "withEnv"
 )
 
 const (
