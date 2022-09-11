@@ -1,18 +1,10 @@
 package config
 
 import (
-	"flag"
 	"strconv"
 	"time"
 
-	"github.com/caarlos0/env/v6"
 	"github.com/rs/zerolog/log"
-)
-
-const (
-	WithDebug = "withDebug"
-	WithFlag  = "withFlag"
-	WithEnv   = "withEnv"
 )
 
 const (
@@ -20,43 +12,33 @@ const (
 	StorageTypeDB
 )
 
-type Config struct {
-	Addr string `env:"ADDRESS"`
+type config struct {
+	servAddr string
 
-	StorageType int
+	storageType int
 
-	PgConnString string `env:"DATABASE_DSN"`
+	pgConnString string
 
-	StoreInterval time.Duration `env:"STORE_INTERVAL"`
-	StoreFile     string        `env:"STORE_FILE"`
-	Restore       bool          `env:"RESTORE"`
+	storeInterval time.Duration
+	storeFile     string
+	restore       bool
 
-	HashKey string `env:"KEY"`
+	hashKey string
+
+	logLevel string
 }
 
-func (c *Config) String() string {
-	restoreStr := "false"
-	if c.Restore {
-		restoreStr = "true"
-	}
-	return "Addr: " + c.Addr +
-		", StorageType: " + strconv.Itoa(c.StorageType) +
-		", PgConnString: " + c.PgConnString +
-		", StoreInterval: " + c.StoreInterval.String() +
-		", StoreFile: " + c.StoreFile +
-		", Restore: " + restoreStr
-}
-
-func New(args ...string) (*Config, error) {
+func New(args ...string) (*config, error) {
 	log.Debug().Strs("args", args).Msg("config.New started")
-	cfg := &Config{}
+	cfg := &config{}
 	defer func() {
 		log.Debug().Str("config", cfg.String()).Msg("config.New ended")
 	}()
 
-	cfg.Addr = "127.0.0.1:8080"
-	cfg.StoreInterval = time.Second * 300
-	cfg.Restore = true
+	cfg.servAddr = "127.0.0.1:8080"
+	cfg.storeInterval = time.Second * 300
+	cfg.restore = true
+	cfg.logLevel = "debug"
 
 	for _, arg := range args {
 		switch arg {
@@ -69,27 +51,56 @@ func New(args ...string) (*Config, error) {
 		}
 	}
 
-	if haveDBConnection := cfg.PgConnString != ""; haveDBConnection {
-		cfg.StorageType = StorageTypeDB
+	if cfg.pgConnString != "" {
+		cfg.storageType = StorageTypeDB
 	} else {
-		cfg.StorageType = StorageTypeMemory
+		cfg.storageType = StorageTypeMemory
 	}
 
 	return cfg, nil
 }
 
-func (c *Config) parseFromOsArgs() {
-
-	flag.StringVar(&c.Addr, "a", c.Addr, "api server address")
-	flag.DurationVar(&c.StoreInterval, "i", c.StoreInterval, "interval for writing metrics to a file")
-	flag.StringVar(&c.StoreFile, "f", c.StoreFile, "path to persistent file storage")
-	flag.BoolVar(&c.Restore, "r", c.Restore, "flag for loading metrics from a file at the start of the api")
-	flag.StringVar(&c.HashKey, "k", c.HashKey, "secret key for hash calculation")
-	flag.StringVar(&c.PgConnString, "d", c.PgConnString, "postgres db conn string")
-
-	flag.Parse()
+func (c *config) ServAddr() string {
+	return c.servAddr
 }
 
-func (c *Config) parseFromEnv() error {
-	return env.Parse(c)
+func (c *config) StorageType() int {
+	return c.storageType
+}
+
+func (c *config) PgConnString() string {
+	return c.pgConnString
+}
+
+func (c *config) StoreInterval() time.Duration {
+	return c.storeInterval
+}
+
+func (c *config) StoreFile() string {
+	return c.storeFile
+}
+
+func (c *config) Restore() bool {
+	return c.restore
+}
+
+func (c *config) HashKey() string {
+	return c.hashKey
+}
+
+func (c *config) LogLevel() string {
+	return c.logLevel
+}
+
+func (c *config) String() string {
+	restoreStr := "false"
+	if c.restore {
+		restoreStr = "true"
+	}
+	return "ServAddr: " + c.servAddr +
+		", StorageType: " + strconv.Itoa(c.storageType) +
+		", PgConnString: " + c.pgConnString +
+		", StoreInterval: " + c.storeInterval.String() +
+		", StoreFile: " + c.storeFile +
+		", Restore: " + restoreStr
 }

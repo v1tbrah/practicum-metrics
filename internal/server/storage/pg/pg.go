@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"time"
 
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/rs/zerolog/log"
@@ -17,43 +18,53 @@ var ErrHaveNotOpenedDBConnection = errors.New("haven`t opened the database conne
 
 type Pg struct {
 	db            *sql.DB
-	getMetricStmt *sql.Stmt
-	setMetricStmt *sql.Stmt
-	getDataStmt   *sql.Stmt
+	stmtGetMetric *sql.Stmt
+	stmtSetMetric *sql.Stmt
+	stmtGetData   *sql.Stmt
 }
 
 // New returns new postgres storage.
 func New(pgConn string) (*Pg, error) {
 	log.Debug().Str("pgConn", pgConn).Msg("pg.New started")
-	defer log.Debug().Msg("pg.New ended")
+	var err error
+	defer func() {
+		if err != nil {
+			log.Error().Err(err).Msg("pg.New ended")
+		} else {
+			log.Debug().Msg("pg.New ended")
+		}
+	}()
 
 	newPg := Pg{}
 
-	if err := newPg.openDB(pgConn); err != nil {
+	db, err := sql.Open("pgx", pgConn)
+	if err != nil {
 		return nil, err
 	}
-	if err := newPg.setDefaultConfig(); err != nil {
-		return nil, err
-	}
+	newPg.db = db
+
+	newPg.db.SetMaxOpenConns(20)
+	newPg.db.SetMaxIdleConns(20)
+	newPg.db.SetConnMaxIdleTime(time.Second * 30)
+	newPg.db.SetConnMaxLifetime(time.Minute * 2)
 
 	ctx := context.Background()
-
-	if _, err := newPg.db.ExecContext(ctx,
-		`CREATE TABLE IF NOT EXISTS metrics (
-			id varchar(255) PRIMARY KEY, 
-			type  varchar(30) NOT NULL, 
-			delta bigint, 
-			value double PRECISION)`); err != nil {
+	if err = newPg.initTables(ctx); err != nil {
 		return nil, err
 	}
 
-	if err := newPg.setGetMetricStmt(ctx); err != nil {
+	newPg.stmtGetMetric, err = newPg.db.PrepareContext(ctx, stmtGetMetric)
+	if err != nil {
 		return nil, err
 	}
-	if err := newPg.setSetMetricStmt(ctx); err != nil {
+
+	newPg.stmtSetMetric, err = newPg.db.PrepareContext(ctx, stmtSetMetric)
+	if err != nil {
 		return nil, err
 	}
-	if err := newPg.setGetDataStmt(ctx); err != nil {
+
+	newPg.stmtGetData, err = newPg.db.PrepareContext(ctx, stmtGetData)
+	if err != nil {
 		return nil, err
 	}
 
@@ -62,25 +73,22 @@ func New(pgConn string) (*Pg, error) {
 
 func (p *Pg) GetMetric(ctx context.Context, ID string) (metric.Metrics, bool, error) {
 	log.Debug().Str("MID", ID).Msg("pg.GetMetric started")
-	defer log.Debug().Msg("pg.GetMetric ended")
+	var err error
+	defer func() {
+		if err != nil {
+			log.Debug().Msg("pg.GetMetric ended")
+		} else {
+			log.Error().Err(err).Msg("pg.GetMetric ended")
+		}
+	}()
 
 	resultMetric := metric.Metrics{}
 
-	row := p.getMetricStmt.QueryRowContext(ctx, ID)
-	//row := p.dbPoll.QueryRow(ctx,
-	//	`SELECT
-	//			id,
-	//			type,
-	//			delta,
-	//			value
-	//		FROM
-	//			metrics
-	//		WHERE id=$1`,
-	//	ID)
+	row := p.stmtGetMetric.QueryRowContext(ctx, ID)
 
 	var delta sql.NullInt64
 	var value sql.NullFloat64
-	err := row.Scan(&resultMetric.ID, &resultMetric.MType, &delta, &value)
+	err = row.Scan(&resultMetric.ID, &resultMetric.MType, &delta, &value)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return resultMetric, false, nil
@@ -100,7 +108,14 @@ func (p *Pg) GetMetric(ctx context.Context, ID string) (metric.Metrics, bool, er
 
 func (p *Pg) SetMetric(ctx context.Context, thisMetric metric.Metrics) error {
 	log.Debug().Str("thisMetric", fmt.Sprint(thisMetric)).Msg("pg.SetMetric started")
-	defer log.Debug().Msg("pg.SetMetric ended")
+	var err error
+	defer func() {
+		if err != nil {
+			log.Debug().Msg("pg.SetMetric ended")
+		} else {
+			log.Error().Err(err).Msg("pg.SetMetric ended")
+		}
+	}()
 
 	tx, err := p.db.Begin()
 	if err != nil {
@@ -108,13 +123,8 @@ func (p *Pg) SetMetric(ctx context.Context, thisMetric metric.Metrics) error {
 	}
 	defer tx.Rollback()
 
-	txStmt := tx.StmtContext(ctx, p.setMetricStmt)
+	txStmt := tx.StmtContext(ctx, p.stmtSetMetric)
 	if _, err = txStmt.ExecContext(ctx,
-		//`INSERT INTO metrics
-		//		(id, type, delta, value)
-		//	VALUES ($1, $2, $3, $4)
-		//	ON CONFLICT (id) DO UPDATE SET
-		//		id=$1, type=$2, delta=$3, value=$4`,
 		thisMetric.ID, thisMetric.MType, thisMetric.Delta, thisMetric.Value); err != nil {
 		return err
 	}
@@ -124,7 +134,14 @@ func (p *Pg) SetMetric(ctx context.Context, thisMetric metric.Metrics) error {
 
 func (p *Pg) SetListMetrics(ctx context.Context, listMetrics []metric.Metrics) error {
 	log.Debug().Str("listMetrics", fmt.Sprint(listMetrics)).Msg("pg.SetListMetrics started")
-	defer log.Debug().Msg("pg.SetListMetrics ended")
+	var err error
+	defer func() {
+		if err != nil {
+			log.Debug().Msg("pg.SetListMetrics ended")
+		} else {
+			log.Error().Err(err).Msg("pg.SetListMetrics ended")
+		}
+	}()
 
 	tx, err := p.db.Begin()
 	if err != nil {
@@ -132,15 +149,10 @@ func (p *Pg) SetListMetrics(ctx context.Context, listMetrics []metric.Metrics) e
 	}
 	defer tx.Rollback()
 
-	txStmt := tx.StmtContext(ctx, p.setMetricStmt)
+	txStmt := tx.StmtContext(ctx, p.stmtSetMetric)
 
 	for _, currMetric := range listMetrics {
 		if _, err = txStmt.ExecContext(ctx,
-			//`INSERT INTO metrics
-			//		(id, type, delta, value)
-			//	VALUES ($1, $2, $3, $4)
-			//	ON CONFLICT (id) DO UPDATE SET
-			//		id=$1, type=$2, delta=$3, value=$4`,
 			currMetric.ID, currMetric.MType, currMetric.Delta, currMetric.Value); err != nil {
 			return err
 		}
@@ -151,16 +163,16 @@ func (p *Pg) SetListMetrics(ctx context.Context, listMetrics []metric.Metrics) e
 
 func (p *Pg) GetData(ctx context.Context) (model.Data, error) {
 	log.Debug().Msg("pg.GetData started")
-	defer log.Debug().Msg("pg.GetData ended")
+	var err error
+	defer func() {
+		if err != nil {
+			log.Debug().Msg("pg.GetData ended")
+		} else {
+			log.Error().Err(err).Msg("pg.GetData ended")
+		}
+	}()
 
-	rows, err := p.getDataStmt.QueryContext(ctx)
-	//`SELECT
-	//		id,
-	//		type,
-	//		delta,
-	//		value
-	//	FROM
-	//		metrics`)
+	rows, err := p.stmtGetData.QueryContext(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -189,9 +201,17 @@ func (p *Pg) GetData(ctx context.Context) (model.Data, error) {
 
 func (p *Pg) Ping(ctx context.Context) error {
 	log.Debug().Msg("pg.Ping started")
-	defer log.Debug().Msg("pg.Ping ended")
+	var err error
+	defer func() {
+		if err != nil {
+			log.Debug().Msg("pg.Ping ended")
+		} else {
+			log.Error().Err(err).Msg("pg.Ping ended")
+		}
+	}()
 
-	return p.db.PingContext(ctx)
+	err = p.db.PingContext(ctx)
+	return err
 }
 
 func (p *Pg) ClosePoolConn() {

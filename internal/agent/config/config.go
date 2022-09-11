@@ -1,86 +1,95 @@
 package config
 
 import (
-	"flag"
 	"time"
 
-	"github.com/caarlos0/env/v6"
 	"github.com/rs/zerolog/log"
 )
 
-const (
-	WithFlag = "withFlag"
-	WithEnv  = "withEnv"
-)
+type config struct {
+	serverAddr string
 
-type Config struct {
-	ServerAddr string `env:"ADDRESS"`
+	pollInterval   time.Duration
+	reportInterval time.Duration
 
-	PollInterval   time.Duration `env:"POLL_INTERVAL"`
-	ReportInterval time.Duration `env:"REPORT_INTERVAL"`
+	hashKey string
 
-	HashKey string `env:"KEY"`
+	reportMetricURL      string
+	reportListMetricsURL string
+	getMetricURL         string
 
-	ReportMetricURL      string
-	ReportListMetricsURL string
-	GetMetricURL         string
+	logLevel string
 }
 
-func (c *Config) String() string {
-	return "ServerAddr: " + c.ServerAddr +
-		", PollInterval: " + c.PollInterval.String() +
-		", ReportInterval: " + c.ReportInterval.String() +
-		", ReportMetricURL: " + c.ReportMetricURL +
-		", ReportListMetricsURL: " + c.ReportListMetricsURL +
-		", GetMetricURL: " + c.GetMetricURL
-}
-
-func New(args ...string) (*Config, error) {
+func New(args ...string) (*config, error) {
 	log.Debug().Strs("args", args).Msg("config.New started")
-	cfg := &Config{}
+	cfg := &config{}
+	var err error
 	defer func() {
-		log.Debug().Str("config", cfg.String()).Msg("config.New ended")
+		if err != nil {
+			log.Error().Err(err).Msg("config.New ended")
+		} else {
+			log.Debug().Str("config", cfg.String()).Msg("config.New ended")
+		}
 	}()
 
-	cfg.ServerAddr = "127.0.0.1:8080"
-	cfg.PollInterval = 2 * time.Second
-	cfg.ReportInterval = 10 * time.Second
+	cfg.serverAddr = "127.0.0.1:8080"
+	cfg.pollInterval = 2 * time.Second
+	cfg.reportInterval = 10 * time.Second
+	cfg.logLevel = "debug"
 
 	for _, arg := range args {
 		switch arg {
 		case WithFlag:
 			cfg.parseFromOsArgs()
 		case WithEnv:
-			if err := cfg.parseFromEnv(); err != nil {
+			if err = cfg.parseFromEnv(); err != nil {
 				return nil, err
 			}
 		}
 	}
 
-	cfg.ReportMetricURL = "http://" + cfg.ServerAddr + "/update/"
-	cfg.ReportListMetricsURL = "http://" + cfg.ServerAddr + "/updates/"
-	cfg.GetMetricURL = "http://" + cfg.ServerAddr + "/update/"
+	cfg.reportMetricURL = "http://" + cfg.serverAddr + "/update/"
+	cfg.reportListMetricsURL = "http://" + cfg.serverAddr + "/updates/"
+	cfg.getMetricURL = "http://" + cfg.serverAddr + "/update/"
 
 	return cfg, nil
 }
 
-func (c *Config) parseFromOsArgs() {
-	log.Debug().Msg("config.parseFromOsArgs started")
-	defer log.Debug().Msg("config.parseFromOsArgs ended")
-
-	flag.StringVar(&c.ServerAddr, "a", c.ServerAddr, "server address")
-	flag.DurationVar(&c.PollInterval, "p", c.PollInterval, "interval for updating metrics")
-	flag.DurationVar(&c.ReportInterval, "r", c.ReportInterval, "interval for report metrics to server")
-	flag.StringVar(&c.HashKey, "k", c.HashKey, "secret key for hash calculation")
-
-	if !flag.Parsed() {
-		flag.Parse()
-	}
+func (c *config) PollInterval() time.Duration {
+	return c.pollInterval
 }
 
-func (c *Config) parseFromEnv() error {
-	log.Debug().Msg("config.parseFromEnv started")
-	defer log.Debug().Msg("config.parseFromEnv ended")
+func (c *config) ReportInterval() time.Duration {
+	return c.reportInterval
+}
 
-	return env.Parse(c)
+func (c *config) HashKey() string {
+	return c.hashKey
+}
+
+func (c *config) ReportMetricURL() string {
+	return c.reportMetricURL
+}
+
+func (c *config) ReportListMetricsURL() string {
+	return c.reportListMetricsURL
+}
+
+func (c *config) GetMetricURL() string {
+	return c.getMetricURL
+}
+
+func (c *config) LogLevel() string {
+	return c.logLevel
+}
+
+func (c *config) String() string {
+	return "ServerAddr: " + c.serverAddr +
+		", PollInterval: " + c.pollInterval.String() +
+		", ReportInterval: " + c.reportInterval.String() +
+		", ReportMetricURL: " + c.reportMetricURL +
+		", ReportListMetricsURL: " + c.reportListMetricsURL +
+		", GetMetricURL: " + c.getMetricURL +
+		", LogLevel: " + c.logLevel
 }

@@ -2,9 +2,7 @@ package model
 
 import (
 	"encoding/json"
-
 	"github.com/rs/zerolog/log"
-
 	"github.com/v1tbrah/metricsAndAlerting/pkg/metric"
 )
 

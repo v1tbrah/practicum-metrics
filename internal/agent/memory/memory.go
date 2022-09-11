@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/rs/zerolog/log"
-  "github.com/shirou/gopsutil/v3/cpu"
+	"github.com/shirou/gopsutil/v3/cpu"
 	"github.com/shirou/gopsutil/v3/mem"
 
 	"github.com/v1tbrah/metricsAndAlerting/pkg/metric"
@@ -103,7 +103,14 @@ func (d *Memory) UpdateBasic(keyForUpdateHash string) {
 // UpdateBasic updates additional metrics.
 func (d *Memory) UpdateAdditional(keyForUpdateHash string) error {
 	log.Debug().Msg("memory.UpdateAdditional started")
-	defer log.Debug().Msg("memory.UpdateAdditional ended")
+	var err error
+	defer func() {
+		if err != nil {
+			log.Error().Err(err).Msg("memory.UpdateAdditional ended")
+		} else {
+			log.Debug().Msg("memory.UpdateAdditional ended")
+		}
+	}()
 
 	d.mu.Lock()
 	defer d.mu.Unlock()
@@ -132,13 +139,13 @@ func (d *Memory) UpdateAdditional(keyForUpdateHash string) error {
 	d.data["CPUutilization1"] = CPUUtilForUpd
 
 	if keyForUpdateHash != "" {
-		if err := totalMemoryForUpd.UpdateHash(keyForUpdateHash); err != nil {
+		if err = totalMemoryForUpd.UpdateHash(keyForUpdateHash); err != nil {
 			log.Error().Err(err).Str("metric", totalMemoryForUpd.String()).Msg("unable to computing hash")
 		}
-		if err := freeMemoryForUpd.UpdateHash(keyForUpdateHash); err != nil {
+		if err = freeMemoryForUpd.UpdateHash(keyForUpdateHash); err != nil {
 			log.Error().Err(err).Str("metric", freeMemoryForUpd.String()).Msg("unable to computing hash")
 		}
-		if err := CPUUtilForUpd.UpdateHash(keyForUpdateHash); err != nil {
+		if err = CPUUtilForUpd.UpdateHash(keyForUpdateHash); err != nil {
 			log.Error().Err(err).Str("metric", CPUUtilForUpd.String()).Msg("unable to computing hash")
 		}
 	}
