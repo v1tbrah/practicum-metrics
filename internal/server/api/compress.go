@@ -21,7 +21,7 @@ func (w gzipWriter) Write(b []byte) (int, error) {
 func gzipReadHandle(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		log.Debug().Msg("api.gzipReadHandle started")
-		log.Debug().Msg("api.gzipReadHandle ended")
+		defer log.Debug().Msg("api.gzipReadHandle ended")
 
 		if r.Header.Get("Content-Encoding") == "gzip" {
 			gz, err := gzip.NewReader(r.Body)
@@ -45,7 +45,7 @@ func gzipReadHandle(next http.Handler) http.Handler {
 func gzipWriteHandle(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		log.Debug().Msg("api.gzipWriteHandle started")
-		log.Debug().Msg("api.gzipWriteHandle ended")
+		defer log.Debug().Msg("api.gzipWriteHandle ended")
 
 		if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
 			next.ServeHTTP(w, r)
