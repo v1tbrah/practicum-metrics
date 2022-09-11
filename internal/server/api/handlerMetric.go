@@ -126,7 +126,7 @@ func (a *api) handlerGetMetricValue(w http.ResponseWriter, r *http.Request) {
 		a.error(w, r, http.StatusBadRequest, err)
 		return
 	} else if !isExists {
-		a.error(w, r, http.StatusNotFound, err)
+		a.error(w, r, http.StatusNotFound, ErrMetricIsNotExists)
 		return
 	}
 

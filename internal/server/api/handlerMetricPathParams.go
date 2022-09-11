@@ -69,7 +69,7 @@ func (a *api) handlerGetMetricValuePathParams() http.HandlerFunc {
 			return
 		}
 		if !isExists {
-			a.error(w, r, http.StatusNotFound, err)
+			a.error(w, r, http.StatusNotFound, ErrMetricIsNotExists)
 			return
 		}
 
