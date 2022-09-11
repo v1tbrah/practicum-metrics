@@ -1,8 +1,8 @@
 package api
 
+//go:generate mockery --all
+
 import (
-	"context"
-	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
@@ -11,27 +11,23 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/rs/zerolog/log"
-
-	"github.com/v1tbrah/metricsAndAlerting/internal/server/config"
-	"github.com/v1tbrah/metricsAndAlerting/internal/server/repo/memory"
-	"github.com/v1tbrah/metricsAndAlerting/internal/server/repo/pg"
-	"github.com/v1tbrah/metricsAndAlerting/internal/server/service"
 )
 
 type api struct {
 	server  *http.Server
-	service *service.Service
+	service Service
+	cfg     Config
 }
 
 // New returns new API.
-func New(service *service.Service) *api {
+func New(service Service, cfg Config) *api {
 	log.Debug().Msg("api.New started")
-	log.Debug().Msg("api.New ended")
+	defer log.Debug().Msg("api.New ended")
 
-	newAPI := &api{service: service}
+	newAPI := &api{service: service, cfg: cfg}
 
 	newAPI.server = &http.Server{
-		Addr:    newAPI.service.Cfg.Addr,
+		Addr:    newAPI.cfg.ServAddr(),
 		Handler: newAPI.newRouter(),
 	}
 
@@ -41,37 +37,21 @@ func New(service *service.Service) *api {
 //Run API starts the API.
 func (a *api) Run() {
 	log.Debug().Msg("api.Run started")
-	log.Debug().Msg("api.Run ended")
-
-	log.Info().Msg("api started")
+	defer log.Debug().Msg("api.Run ended")
 
 	exit := make(chan os.Signal, 1)
 	signal.Notify(exit, os.Interrupt, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
 
-	go a.StartListener()
+	go a.startListener()
 
 	<-exit
-	if a.service.Cfg.StorageType == config.StorageTypeMemory {
-		memStorage, _ := a.service.Storage.(*memory.Memory)
-		if err := memStorage.StoreData(context.Background()); err != nil {
-			log.Error().
-				Err(err).
-				Str("storeFile", a.service.Cfg.StoreFile).
-				Msg("unable to store data in file")
-		} else {
-			log.Info().Msg(fmt.Sprintf("data saved to file: %s", a.service.Cfg.StoreFile))
-		}
-	} else if a.service.Cfg.StorageType == config.StorageTypeDB {
-		DBStorage, _ := a.service.Storage.(*pg.Pg)
-		DBStorage.ClosePoolConn()
-	}
-	log.Info().Msg("api ended")
+	a.service.ShutDown()
 	os.Exit(0)
 }
 
-func (a *api) StartListener() {
+func (a *api) startListener() {
 	log.Debug().Msg("api.StartListener started")
-	log.Debug().Msg("api.StartListener ended")
+	defer log.Debug().Msg("api.StartListener ended")
 
 	a.server.ListenAndServe()
 	defer a.server.Close()
@@ -84,13 +64,13 @@ func (a *api) newRouter() chi.Router {
 	r.Use(gzipReadHandle)
 	r.Use(gzipWriteHandle)
 
-	r.Get("/", a.getPageHandler())
-	r.Get("/ping", a.checkDBConnHandler())
-	r.Post("/update/", a.updateMetricHandler)
-	r.Post("/updates/", a.updateListMetricsHandler)
-	r.Post("/value/", a.getMetricValueHandler)
-	r.Post("/update/{type}/{metric}/{val}", a.updateMetricHandlerPathParams())
-	r.Get("/value/{type}/{metric}", a.getMetricValueHandlerPathParams())
+	r.Get("/", a.handlerGetPage())
+	r.Get("/ping", a.handlerPing())
+	r.Post("/update/", a.handlerUpdateMetric)
+	r.Post("/updates/", a.handlerUpdateListMetrics)
+	r.Post("/value/", a.handlerGetMetricValue)
+	r.Post("/update/{type}/{metric}/{val}", a.handlerUpdateMetricPathParams())
+	r.Get("/value/{type}/{metric}", a.handlerGetMetricValuePathParams())
 
 	return r
 }

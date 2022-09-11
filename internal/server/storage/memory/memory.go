@@ -30,8 +30,15 @@ func New(storeFile string) *Memory {
 }
 
 func (m *Memory) GetMetric(ctx context.Context, ID string) (metric.Metrics, bool, error) {
-	log.Debug().Str("MID", ID).Msg("memory.GetMetric started")
-	defer log.Debug().Msg("memory.GetMetric ended")
+	log.Debug().Str("ID", ID).Msg("memory.GetMetric started")
+	var err error
+	defer func () {
+		if err != nil {
+			log.Error().Err(err).Msg("memory.GetMetric ended")
+		} else {
+			log.Debug().Msg("memory.GetMetric ended")
+		}
+	} ()
 
 	m.mu.RLock()
 	defer m.mu.RUnlock()
@@ -53,8 +60,15 @@ func (m *Memory) GetMetric(ctx context.Context, ID string) (metric.Metrics, bool
 }
 
 func (m *Memory) SetMetric(ctx context.Context, thisMetric metric.Metrics) error {
-	log.Debug().Str("thisMetric", fmt.Sprint(thisMetric)).Msg("memory.SetMetric started")
-	defer log.Debug().Msg("memory.SetMetric ended")
+	log.Debug().Str("thisMetric", thisMetric.String()).Msg("memory.SetMetric started")
+	var err error
+	defer func() {
+		if err != nil {
+			log.Error().Err(err).Msg("memory.SetMetric ended")
+		} else {
+			log.Debug().Msg("memory.SetMetric ended")
+		}
+	} ()
 
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -65,7 +79,15 @@ func (m *Memory) SetMetric(ctx context.Context, thisMetric metric.Metrics) error
 
 func (m *Memory) SetListMetrics(ctx context.Context, listMetrics []metric.Metrics) error {
 	log.Debug().Str("listMetrics", fmt.Sprint(listMetrics)).Msg("memory.SetListMetrics started")
-	defer log.Debug().Msg("memory.SetListMetrics ended")
+	var err error
+	defer func () {
+		if err != nil {
+			log.Error().Err(err).Msg("memory.SetListMetrics ended")
+		} else {
+			log.Debug().Msg("memory.SetListMetrics ended")
+		}
+
+	} ()
 
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -78,7 +100,14 @@ func (m *Memory) SetListMetrics(ctx context.Context, listMetrics []metric.Metric
 
 func (m *Memory) GetData(ctx context.Context) (model.Data, error) {
 	log.Debug().Msg("memory.GetData started")
-	defer log.Debug().Msg("memory.GetData ended")
+	var err error
+	defer func () {
+		if err != nil {
+			log.Error().Err(err).Msg("memory.GetData ended")
+		} else {
+			log.Debug().Msg("memory.GetData ended")
+		}
+	} ()
 
 	m.mu.RLock()
 	defer m.mu.RUnlock()
@@ -102,7 +131,14 @@ func (m *Memory) GetData(ctx context.Context) (model.Data, error) {
 
 func (m *Memory) RestoreData() error {
 	log.Debug().Msg("memory.RestoreData started")
-	defer log.Debug().Msg("memory.RestoreData ended")
+	var err error
+	defer func () {
+		if err != nil {
+			log.Error().Err(err).Msg("memory.RestoreData ended")
+		} else {
+			log.Debug().Msg("memory.RestoreData ended")
+		}
+	} ()
 
 	file, err := os.Open(m.storeFile)
 	if err != nil {
@@ -120,7 +156,14 @@ func (m *Memory) RestoreData() error {
 
 func (m *Memory) StoreData(ctx context.Context) error {
 	log.Debug().Msg("memory.StoreData started")
-	defer log.Debug().Msg("memory.StoreData ended")
+	var err error
+	defer func () {
+		if err != nil {
+			log.Error().Err(err).Msg("memory.StoreData ended")
+		} else {
+			log.Debug().Msg("memory.StoreData ended")
+		}
+	} ()
 
 	if m.storeFile == "" {
 		return errors.New("file name is empty")
